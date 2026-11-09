@@ -10,6 +10,7 @@ local Constants = require(Shared:WaitForChild("Constants") :: ModuleScript)
 local GameClock = require(Shared:WaitForChild("GameClock") :: ModuleScript)
 local Remotes = require(Shared:WaitForChild("Remotes") :: ModuleScript)
 local Types = require(Shared:WaitForChild("Types") :: ModuleScript)
+local SoundController = require(script.Parent.SoundController)
 
 type Card = {
 	slot: Frame,
@@ -497,6 +498,7 @@ function LevelUpUi.mount(playerGui: PlayerGui)
 		if not picker.Visible or not offers[slot] or not card or os.clock() < card.readyAt then
 			return
 		end
+		SoundController.play("UpgradePick")
 		close()
 		awaitingSince = os.clock()
 		chooseUpgrade:FireServer(currentSeq, slot)
@@ -506,6 +508,7 @@ function LevelUpUi.mount(playerGui: PlayerGui)
 		if not picker.Visible then
 			return
 		end
+		SoundController.play("UiClick")
 		sessionAction:FireServer("RerollOffer")
 	end)
 
@@ -513,6 +516,7 @@ function LevelUpUi.mount(playerGui: PlayerGui)
 		if not picker.Visible then
 			return
 		end
+		SoundController.play("UpgradePick")
 		close()
 		awaitingSince = os.clock()
 		sessionAction:FireServer("ClaimAllOffer")
@@ -525,6 +529,7 @@ function LevelUpUi.mount(playerGui: PlayerGui)
 			lastPayload = nil
 			return
 		end
+		SoundController.play("LevelUpOpen")
 		lastPayload = payload
 		currentSeq = payload.seq
 		offers = payload.offers

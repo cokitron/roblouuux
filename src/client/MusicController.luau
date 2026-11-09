@@ -45,6 +45,8 @@ local GRAVEYARD_PLAYLIST: { TrackDef } = {
 
 local BASE_VOLUME = 0.44
 local BOSS_VOLUME = 0.58
+local CHAPEL_AMBIENCE_ID = "rbxassetid://9125602748" -- Heavenly Presence Eerie Choral Tones Dark Ru (SFX) - ProSoundEffects
+local CHAPEL_VOLUME = 0.28
 local FADE_INFO = TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local MusicController = {}
@@ -72,6 +74,16 @@ function MusicController.mount(playerGui: PlayerGui)
 	activeSound.RollOffMode = Enum.RollOffMode.InverseTapered
 	activeSound.Parent = musicGroup
 
+	local chapelSound = Instance.new("Sound")
+	chapelSound.Name = "SanctuaryChapelAmbience"
+	chapelSound.SoundId = CHAPEL_AMBIENCE_ID
+	chapelSound.SoundGroup = musicGroup
+	chapelSound.Looped = true
+	chapelSound.Volume = 0
+	chapelSound.PlaybackSpeed = 0.96
+	chapelSound.RollOffMode = Enum.RollOffMode.InverseTapered
+	chapelSound.Parent = musicGroup
+
 	-- Preload the 5 tracks asynchronously so track transitions have zero latency
 	task.spawn(function()
 		local preloadSounds: { Instance } = {}
@@ -92,6 +104,7 @@ function MusicController.mount(playerGui: PlayerGui)
 	local isMuted = false
 	local isInGraveyard = false
 	local activeTween: Tween? = nil
+	local chapelTween: Tween? = nil
 
 	-- Sleek Bottom-Left Synthwave Radio HUD Pill (visible while playing in the Graveyard)
 	local gui = Instance.new("ScreenGui")
@@ -208,6 +221,15 @@ function MusicController.mount(playerGui: PlayerGui)
 		tw:Play()
 	end
 
+	local function tweenChapelVolume(targetVol: number)
+		if chapelTween then
+			chapelTween:Cancel()
+		end
+		local tw = TweenService:Create(chapelSound, FADE_INFO, { Volume = targetVol })
+		chapelTween = tw
+		tw:Play()
+	end
+
 	local function playTrack(index: number)
 		currentTrackIndex = ((index - 1) % #GRAVEYARD_PLAYLIST) + 1
 		local track = GRAVEYARD_PLAYLIST[currentTrackIndex]
@@ -241,6 +263,7 @@ function MusicController.mount(playerGui: PlayerGui)
 	muteBtn.Activated:Connect(function()
 		isMuted = not isMuted
 		tweenVolume(getTargetVolume())
+		tweenChapelVolume(if isMuted or isInGraveyard then 0 else CHAPEL_VOLUME)
 		updateUi()
 	end)
 
@@ -258,23 +281,30 @@ function MusicController.mount(playerGui: PlayerGui)
 		local shouldPlay = (phase == "InRun" or phase == "Downed")
 		if shouldPlay and not isInGraveyard then
 			isInGraveyard = true
+			tweenChapelVolume(0)
 			if not activeSound.IsPlaying then
 				playTrack(currentTrackIndex)
 			else
 				tweenVolume(getTargetVolume())
 				updateUi()
 			end
-		elseif not shouldPlay and isInGraveyard then
-			isInGraveyard = false
-			tweenVolume(0)
-			task.delay(0.9, function()
-				if not isInGraveyard then
-					activeSound:Stop()
-					-- Advance playlist index so the next run greets the player with the next Synthwave track
-					currentTrackIndex = (currentTrackIndex % #GRAVEYARD_PLAYLIST) + 1
-				end
-			end)
-			updateUi()
+		elseif not shouldPlay then
+			if not chapelSound.IsPlaying then
+				chapelSound:Play()
+			end
+			tweenChapelVolume(if isMuted then 0 else CHAPEL_VOLUME)
+			if isInGraveyard then
+				isInGraveyard = false
+				tweenVolume(0)
+				task.delay(0.9, function()
+					if not isInGraveyard then
+						activeSound:Stop()
+						-- Advance playlist index so the next run greets the player with the next Synthwave track
+						currentTrackIndex = (currentTrackIndex % #GRAVEYARD_PLAYLIST) + 1
+					end
+				end)
+				updateUi()
+			end
 		end
 	end
 

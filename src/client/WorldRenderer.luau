@@ -11,6 +11,7 @@ local EnemyVisuals = require(Shared:WaitForChild("EnemyVisuals") :: ModuleScript
 local GameClock = require(Shared:WaitForChild("GameClock") :: ModuleScript)
 local Remotes = require(Shared:WaitForChild("Remotes") :: ModuleScript)
 local Types = require(Shared:WaitForChild("Types") :: ModuleScript)
+local SoundController = require(script.Parent.SoundController)
 
 type Sample = {
 	t: number,
@@ -732,17 +733,33 @@ function WorldRenderer.start()
 		if event.clear then
 			clearWorld(event.t)
 		end
-		for _, hit in event.hits do
-			local entity = entities[hit.id]
-			local hx, hz = hit.x, hit.z
-			if entity then
-				flash(entity)
-				local lastSample = entity.samples[#entity.samples]
-				if lastSample then
-					hx, hz = lastSample.x, lastSample.z
+		if #event.hits > 0 then
+			local maxCrit = 0
+			for _, hit in event.hits do
+				if hit.crit > maxCrit then
+					maxCrit = hit.crit
 				end
+				local entity = entities[hit.id]
+				local hx, hz = hit.x, hit.z
+				if entity then
+					flash(entity)
+					local lastSample = entity.samples[#entity.samples]
+					if lastSample then
+						hx, hz = lastSample.x, lastSample.z
+					end
+				end
+				spawnDamageNumber(hx, hz, hit.dmg, hit.crit)
 			end
-			spawnDamageNumber(hx, hz, hit.dmg, hit.crit)
+			if maxCrit >= 2 then
+				SoundController.play("HitSuperCrit")
+			elseif maxCrit == 1 then
+				SoundController.play("HitCrit")
+			else
+				SoundController.play("HitNormal")
+			end
+		end
+		if #event.kills > 0 then
+			SoundController.play("EnemyKill")
 		end
 		for _, id in event.kills do
 			tombstones[id] = serverNow + TOMBSTONE_SECONDS
@@ -763,6 +780,9 @@ function WorldRenderer.start()
 			end
 		end
 		if event.shockwaves then
+			if #event.shockwaves > 0 then
+				SoundController.play("Shockwave")
+			end
 			local gy = groundY()
 			local waveTween = TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 			for _, sw in event.shockwaves do
@@ -788,6 +808,7 @@ function WorldRenderer.start()
 			local cleaveTween = TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 			for _, cl in event.cleaves do
 				triggerWeaponAttack(cl.ox, cl.oz)
+				SoundController.play(if cl.overcharge then "CleaveOvercharge" else "Cleave")
 				if cl.overcharge then
 					-- 360-Degree Executioner's Maelstrom whirl ring
 					local maelstrom = newPart(
@@ -845,6 +866,9 @@ function WorldRenderer.start()
 			end
 		end
 		if event.cinders then
+			if #event.cinders > 0 then
+				SoundController.play("Cinder")
+			end
 			local gy = groundY()
 			for _, cin in event.cinders do
 				triggerWeaponAttack(cin.ox, cin.oz)
@@ -933,6 +957,9 @@ function WorldRenderer.start()
 			end
 		end
 		if event.lightnings then
+			if #event.lightnings > 0 then
+				SoundController.play("Lightning")
+			end
 			local gy = groundY()
 			for _, ln in event.lightnings do
 				triggerWeaponAttack(ln.x1, ln.z1)
@@ -1006,10 +1033,13 @@ function WorldRenderer.start()
 		local initialCf = CFrame.lookAt(startPos, startPos + Vector3.new(record.dx, 0, record.dz))
 		local model: Model
 		if record.kind == "Arrow" then
+			SoundController.play("Arrow")
 			model = buildSpectralArrow(folder, initialCf, record.overcharge)
 		elseif record.kind == "Bullet" then
+			SoundController.play("Bullet")
 			model = buildSilverBullet(folder, initialCf, record.overcharge)
 		else
+			SoundController.play("Bolt")
 			model = buildMagicBolt(folder, initialCf, record.overcharge)
 		end
 		bolts[record.id] = { model = model, record = record }
