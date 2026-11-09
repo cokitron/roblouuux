@@ -1,0 +1,7 @@
+---
+# math.isfinite exists in the Studio Luau runtime but is missing from the generated roblox.yml.
+globals:
+  math.isfinite:
+    args:
+      - type: number
+    must_use: true

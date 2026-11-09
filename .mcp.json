@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "Roblox_Studio": {
+      "command": "C:\\Users\\jorge\\AppData\\Local\\Roblox\\mcp.bat"
+    },
+    "solidcraft": {
+      "command": "C:\\Program Files\\SolidCraft\\solidcraft-cli.exe",
+      "args": [
+        "mcp",
+        "--allow-path",
+        "d:\\game-dev"
+      ]
+    },
+    "texturecraft": {
+      "command": "C:\\Program Files\\TextureCraft\\texturecraft-cli.exe",
+      "args": [
+        "mcp",
+        "--read-root",
+        "d:\\game-dev",
+        "--write-root",
+        "d:\\game-dev"
+      ]
+    }
+  }
+}

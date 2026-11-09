@@ -1,0 +1,23 @@
+# Roblox Studio & SolidCraft lock / autosave files
+*.rbxl.lock
+*.rbxlx.lock
+*.sc.lock
+.~*.lock
+AutoSaves/
+
+# SolidCraft backup files
+*.sc.bak
+*.bak
+
+# Heavy TextureCraft project binaries (>100 MB per file) & intermediate 3D bake exports
+# Parametric sources live in assets/solidcraft/*.sc and final Studio assets in roblouuux.rbxl
+assets/texturecraft/*.tcraft
+assets/exports/*.obj
+assets/exports/*.mtl
+assets/exports/*.glb
+assets/exports/*.stl
+assets/exports/textures/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db

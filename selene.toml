@@ -1,0 +1,4 @@
+std = "roblox+isfinite"
+
+[lints]
+shadowing = "warn"
