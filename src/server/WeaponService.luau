@@ -1,4 +1,5 @@
 --!strict
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Arena = require(script.Parent.Arena)
@@ -905,6 +906,135 @@ function WeaponService.step(dt: number)
 		updateBow(state, weapons, target.position, dt)
 		updatePistols(state, weapons, target.position, dt)
 		updateStorm(state, weapons, target.position, dt)
+	end
+
+	-- Sanctuary Chapel East Transept Combat Training Yard (Live Dummy Practice + DPS Meter)
+	local dummies = Arena.getTrainingDummies()
+	if #dummies > 0 then
+		for _, player in Players:GetPlayers() do
+			local state = PlayerState.get(player)
+			if state and state.phase == "Lobby" then
+				local character = player.Character
+				local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+				if root and root:IsA("BasePart") then
+					local pos = root.Position
+					local nearestDummy = nil
+					local bestDistSq = 25 * 25
+					for _, d in dummies do
+						local dx = d.x - pos.X
+						local dz = d.z - pos.Z
+						local dSq = dx * dx + dz * dz
+						if dSq <= bestDistSq then
+							bestDistSq = dSq
+							nearestDummy = d
+						end
+					end
+
+					if nearestDummy then
+						alive[player] = true
+						local weapons = getWeapons(player)
+						weapons.boltCooldown = math.max(0, weapons.boltCooldown - dt)
+						if weapons.boltCooldown <= 0 then
+							local wId = state.selectedWeapon
+							local cd = 0.72 * state.cooldownMultiplier
+							local rawDmg = Constants.BOLT_DAMAGE * state.damageMultiplier
+							if wId == "CryptCleaver" then
+								cd = Constants.CLEAVE_COOLDOWN * state.cooldownMultiplier
+								rawDmg = Constants.CLEAVE_DAMAGE * state.damageMultiplier
+							elseif wId == "SoulflameLantern" then
+								cd = Constants.CINDER_COOLDOWN * state.cooldownMultiplier
+								rawDmg = Constants.CINDER_DAMAGE * state.damageMultiplier
+							elseif wId == "PhantomBow" then
+								cd = Constants.BOW_COOLDOWN * state.cooldownMultiplier
+								rawDmg = Constants.BOW_DAMAGE * state.damageMultiplier
+							elseif wId == "HexlockPistols" then
+								cd = Constants.PISTOL_COOLDOWN * state.cooldownMultiplier
+								rawDmg = Constants.PISTOL_DAMAGE * state.damageMultiplier
+							elseif wId == "StormcallerTome" then
+								cd = Constants.STORM_COOLDOWN * state.cooldownMultiplier
+								rawDmg = Constants.STORM_DAMAGE * state.damageMultiplier
+							end
+							weapons.boltCooldown = math.max(0.22, cd)
+							weapons.boltShots += 1
+							local isOvercharge = (weapons.boltShots % 4 == 0)
+							local isCrit = rng:NextNumber() < state.critChance
+							local critMult = if isCrit then state.critDamageMultiplier else 1.0
+							local finalDmg =
+								math.max(1, math.floor(rawDmg * critMult * (if isOvercharge then 1.45 else 1.0) + 0.5))
+							local critTier = if isCrit then (if isOvercharge then 2 else 1) else 0
+
+							local dx = nearestDummy.x - pos.X
+							local dz = nearestDummy.z - pos.Z
+							local dist = math.max(math.sqrt(dx * dx + dz * dz), 0.001)
+							local dirX, dirZ = dx / dist, dz / dist
+
+							if wId == "CryptCleaver" then
+								Replication.queueCleave(pos.X, pos.Z, dirX, dirZ, 125, 14, isOvercharge)
+							elseif wId == "SoulflameLantern" then
+								Replication.queueCinder(
+									pos.X,
+									pos.Z,
+									nearestDummy.x,
+									nearestDummy.z,
+									6,
+									1.5,
+									isOvercharge
+								)
+							elseif wId == "StormcallerTome" then
+								Replication.queueLightning(pos.X, pos.Z, nearestDummy.x, nearestDummy.z, isOvercharge)
+								for _, otherD in dummies do
+									if otherD ~= nearestDummy then
+										Replication.queueLightning(
+											nearestDummy.x,
+											nearestDummy.z,
+											otherD.x,
+											otherD.z,
+											false
+										)
+										Replication.queueHit(
+											900 + otherD.id,
+											math.floor(finalDmg * 0.75),
+											critTier,
+											otherD.x,
+											otherD.z
+										)
+										Arena.recordDummyHit(math.floor(finalDmg * 0.75), isCrit)
+									end
+								end
+							else
+								nextBoltId += 1
+								local kind = if wId == "PhantomBow"
+									then "Arrow"
+									elseif wId == "HexlockPistols" then "Bullet"
+									else nil
+								Replication.fireBolts({
+									{
+										id = nextBoltId,
+										ox = pos.X,
+										oz = pos.Z,
+										dx = dirX,
+										dz = dirZ,
+										t0 = GameClock.now(),
+										v = 56,
+										overcharge = isOvercharge,
+										kind = kind,
+									},
+								})
+							end
+
+							Replication.queueHit(
+								900 + nearestDummy.id,
+								finalDmg,
+								critTier,
+								nearestDummy.x,
+								nearestDummy.z
+							)
+							Arena.recordDummyHit(finalDmg, isCrit)
+						end
+					end
+				end
+			end
+		end
 	end
 
 	for player in playerWeapons do

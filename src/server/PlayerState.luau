@@ -32,9 +32,107 @@ local levelUpOffer = Remotes.get("LevelUpOffer")
 local states: { [Player]: State } = {}
 local targets: { Target } = {}
 local frozen = false
+local coopPortalTimer = 0
+local nextChampionsSync = 0
 local rng = Random.new()
 
 local PlayerState = {}
+
+local function syncLeaderstatsAndPrestigeTag(state: State)
+	local player = state.player
+	local profile = DataService.getProfile(player)
+	local heroLv = if profile then profile.heroLevel else 1
+	local bestMPlus = if profile then profile.highestKeystoneCleared else 0
+
+	local ls = player:FindFirstChild("leaderstats")
+	if not ls then
+		local folder = Instance.new("Folder")
+		folder.Name = "leaderstats"
+		folder.Parent = player
+		ls = folder
+	end
+	if ls then
+		local lvVal = ls:FindFirstChild("Hero Lv") :: IntValue?
+		if not lvVal then
+			local v = Instance.new("IntValue")
+			v.Name = "Hero Lv"
+			v.Parent = ls
+			lvVal = v
+		end
+		if lvVal then
+			lvVal.Value = heroLv
+		end
+
+		local mpVal = ls:FindFirstChild("Best M+") :: IntValue?
+		if not mpVal then
+			local v = Instance.new("IntValue")
+			v.Name = "Best M+"
+			v.Parent = ls
+			mpVal = v
+		end
+		if mpVal then
+			mpVal.Value = bestMPlus
+		end
+
+		local soulsVal = ls:FindFirstChild("Souls") :: IntValue?
+		if not soulsVal then
+			local v = Instance.new("IntValue")
+			v.Name = "Souls"
+			v.Parent = ls
+			soulsVal = v
+		end
+		if soulsVal then
+			soulsVal.Value = state.souls
+		end
+	end
+
+	local character = state.character
+	local head = character and character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		local bb = head:FindFirstChild("HeroPrestigeTag") :: BillboardGui?
+		if not bb then
+			local newBb = Instance.new("BillboardGui")
+			newBb.Name = "HeroPrestigeTag"
+			newBb.Size = UDim2.fromOffset(210, 44)
+			newBb.StudsOffset = Vector3.new(0, 2.7, 0)
+			newBb.AlwaysOnTop = true
+			newBb.MaxDistance = 65
+			newBb.Parent = head
+
+			local lbl = Instance.new("TextLabel")
+			lbl.Name = "TagLabel"
+			lbl.Size = UDim2.fromScale(1, 1)
+			lbl.BackgroundTransparency = 1
+			lbl.Font = Enum.Font.GothamBlack
+			lbl.RichText = true
+			lbl.TextSize = 12
+			lbl.TextColor3 = Color3.fromRGB(255, 230, 130)
+			lbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
+			lbl.TextStrokeTransparency = 0.12
+			lbl.Parent = newBb
+			bb = newBb
+		end
+		local lbl = bb and bb:FindFirstChild("TagLabel") :: TextLabel?
+		if lbl then
+			local title = if bestMPlus >= 10
+				then "👑 Archon of the Crypt"
+				elseif heroLv >= 20 then "⚔️ Undying Vanguard"
+				elseif heroLv >= 10 then "🛡️ Chapel Templar"
+				else "✨ Sanctuary Initiate"
+			local blessBadge = if player:GetAttribute("SanctuaryBlessingActive") == true
+				then " <font color='#55ffaa'>[Blessed]</font>"
+				else ""
+			lbl.Text = string.format(
+				"%s%s\n<font size='11' color='#a8ffeb'>Hero Lv.%d • M+%d • %d Kills</font>",
+				title,
+				blessBadge,
+				heroLv,
+				bestMPlus,
+				state.bestKills
+			)
+		end
+	end
+end
 
 local function countFriendsInServer(player: Player): number
 	local friends = 0
@@ -124,6 +222,7 @@ local function publish(state: State)
 	player:SetAttribute("CcExpiresClock", state.ccExpiresClock)
 	player:SetAttribute("CcSourceX", state.ccSourceX)
 	player:SetAttribute("CcSourceZ", state.ccSourceZ)
+	syncLeaderstatsAndPrestigeTag(state)
 end
 
 local function getHumanoid(state: State): Humanoid?
@@ -431,13 +530,36 @@ function PlayerState.reset(player: Player, character: Model): State
 	return state
 end
 
-function PlayerState.startRun(state: State): boolean
+function PlayerState.claimSanctuaryBlessing(player: Player): boolean
+	local state = states[player]
+	if not state or state.phase ~= "Lobby" then
+		return false
+	end
+	player:SetAttribute("SanctuaryBlessingActive", true)
+	player:SetAttribute(
+		"FieldEventBanner",
+		string.format(
+			"✨ SANCTUARY BLESSING CLAIMED! +20 Starting Ward & +10%% Move Speed on Next Expedition! (%d)",
+			math.floor(os.clock() * 10)
+		)
+	)
+	publish(state)
+	return true
+end
+
+function PlayerState.startRun(state: State, isCoopDeploy: boolean?): boolean
 	if state.phase ~= "Lobby" and state.phase ~= "Summary" then
 		return false
 	end
 	local bonuses = DataService.computeBonuses(state.player)
 	local profile = DataService.getProfile(state.player)
 	local friendMult = 1 + countFriendsInServer(state.player) * 0.10
+	local hasFontBlessing = state.player:GetAttribute("SanctuaryBlessingActive") == true
+	state.player:SetAttribute("SanctuaryBlessingActive", false)
+	local coopWardBonus = if isCoopDeploy then 15 else 0
+	local fontWardBonus = if hasFontBlessing then 20 else 0
+	local fontSpeedBonus = if hasFontBlessing then 0.10 else 0
+	local coopXpMult = if isCoopDeploy then 1.15 else 1.0
 
 	state.phase = "InRun"
 	state.alive = true
@@ -449,7 +571,7 @@ function PlayerState.startRun(state: State): boolean
 	state.kills = 0
 	state.damageMultiplier = bonuses.damageMult
 	state.cooldownMultiplier = bonuses.cooldownMult
-	state.moveSpeedMultiplier = bonuses.moveSpeedMult
+	state.moveSpeedMultiplier = bonuses.moveSpeedMult + fontSpeedBonus
 	state.pickupRadius = Constants.PICKUP_RADIUS * bonuses.magnetMult
 	state.armor = bonuses.armorBonus
 	state.critChance = Constants.BASE_CRIT_CHANCE + bonuses.critBonus
@@ -457,13 +579,13 @@ function PlayerState.startRun(state: State): boolean
 	state.critNovaDamage = 0
 	state.lookDirX = 0
 	state.lookDirZ = -1
-	state.xpMultiplier = bonuses.xpMult * friendMult
+	state.xpMultiplier = bonuses.xpMult * friendMult * coopXpMult
 	state.luck = bonuses.luckBonus
 	state.thorns = 0
 	state.lifestealChance = 0
 	state.lifestealAmount = 3
-	state.arcaneWardMax = bonuses.wardBonus
-	state.arcaneWardCurrent = bonuses.wardBonus
+	state.arcaneWardMax = bonuses.wardBonus + fontWardBonus + coopWardBonus
+	state.arcaneWardCurrent = state.arcaneWardMax
 	state.orbResonanceDamage = 0
 	state.cleaveExecuteThreshold = 0
 	state.boneShatterDamage = 0
@@ -1099,20 +1221,23 @@ function PlayerState.getMaxOffensivePowerRatio(elapsed: number): number
 end
 
 function PlayerState.dash(state: State): boolean
-	if state.phase ~= "InRun" or not state.alive or frozen then
+	local inRun = state.phase == "InRun" and state.alive and not frozen
+	local inLobby = state.phase == "Lobby"
+	if not inRun and not inLobby then
 		return false
 	end
 	local now = os.clock()
 	if now < state.dashReadyAt then
 		return false
 	end
-	local brokeCc = state.ccKind ~= "" and now < state.ccExpiresAt
+	local brokeCc = inRun and state.ccKind ~= "" and now < state.ccExpiresAt
 	state.ccKind = ""
 	state.ccExpiresAt = 0
 	state.ccExpiresClock = 0
 	state.ccImmuneUntil = math.max(state.ccImmuneUntil, now + Constants.CC_DASH_CLEANSE_IMMUNE_SECONDS)
 
-	state.dashReadyAt = now + Constants.DASH_COOLDOWN
+	local cd = if inLobby then 1.8 else Constants.DASH_COOLDOWN
+	state.dashReadyAt = now + cd
 	state.dashEndsAt = now + Constants.DASH_DURATION
 	state.immuneUntil = math.max(state.immuneUntil, now + Constants.DASH_IMMUNE_SECONDS)
 	state.moveBudget =
@@ -1130,8 +1255,10 @@ function PlayerState.dash(state: State): boolean
 		end
 		local burstSpeed = Constants.PLAYER_WALK_SPEED * state.moveSpeedMultiplier * Constants.DASH_SPEED_MULT
 		root.AssemblyLinearVelocity = Vector3.new(dir.X * burstSpeed, root.AssemblyLinearVelocity.Y, dir.Z * burstSpeed)
-		local EnemyService = require(script.Parent.EnemyService)
-		EnemyService.shockwaveClear(root.Position, 10, 14 * state.damageMultiplier, 12, state)
+		if inRun then
+			local EnemyService = require(script.Parent.EnemyService)
+			EnemyService.shockwaveClear(root.Position, 10, 14 * state.damageMultiplier, 12, state)
+		end
 	end
 
 	if brokeCc then
@@ -1143,7 +1270,7 @@ function PlayerState.dash(state: State): boolean
 			)
 		)
 	end
-	state.player:SetAttribute("DashReadyClock", GameClock.now() + Constants.DASH_COOLDOWN)
+	state.player:SetAttribute("DashReadyClock", GameClock.now() + cd)
 	publish(state)
 	return true
 end
@@ -1288,19 +1415,35 @@ function PlayerState.setFrozen(value: boolean)
 end
 
 function PlayerState.step(dt: number)
+	local Arena = require(script.Parent.Arena)
 	local portalX = Constants.LOBBY_PORTAL_POS.X
 	local portalZ = Constants.LOBBY_PORTAL_POS.Z
 	local portalRadiusSq = Constants.LOBBY_PORTAL_RADIUS * Constants.LOBBY_PORTAL_RADIUS
+	local coopPortalX = Constants.LOBBY_COOP_PORTAL_POS.X
+	local coopPortalZ = Constants.LOBBY_COOP_PORTAL_POS.Z
+	local coopPortalRadiusSq = Constants.LOBBY_COOP_PORTAL_RADIUS * Constants.LOBBY_COOP_PORTAL_RADIUS
 	local coopRadiusSq = Constants.COOP_REVIVE_RADIUS * Constants.COOP_REVIVE_RADIUS
+
+	local queuedCoop: { State } = {}
 
 	for _, state in states do
 		if state.phase == "Lobby" then
+			if state.dashEndsAt > 0 and os.clock() >= state.dashEndsAt then
+				state.dashEndsAt = 0
+				applyHumanoidStats(state)
+			end
 			local pos = PlayerState.getPosition(state)
 			if pos and math.isfinite(pos.X) and math.isfinite(pos.Z) then
 				local dx = pos.X - portalX
 				local dz = pos.Z - portalZ
 				if dx * dx + dz * dz <= portalRadiusSq then
-					PlayerState.startRun(state)
+					PlayerState.startRun(state, false)
+				else
+					local cdx = pos.X - coopPortalX
+					local cdz = pos.Z - coopPortalZ
+					if cdx * cdx + cdz * cdz <= coopPortalRadiusSq then
+						table.insert(queuedCoop, state)
+					end
 				end
 			end
 		elseif state.phase == "Downed" then
@@ -1424,6 +1567,60 @@ function PlayerState.step(dt: number)
 				publish(state)
 			end
 		end
+	end
+
+	if #queuedCoop > 0 then
+		coopPortalTimer += dt
+		local rem = Constants.LOBBY_COOP_COUNTDOWN_SECONDS - coopPortalTimer
+		Arena.updateCoopPortalBillboard(#queuedCoop, rem)
+		if coopPortalTimer >= Constants.LOBBY_COOP_COUNTDOWN_SECONDS then
+			coopPortalTimer = 0
+			for _, s in queuedCoop do
+				PlayerState.startRun(s, true)
+			end
+			Arena.updateCoopPortalBillboard(0, nil)
+		end
+	elseif coopPortalTimer > 0 then
+		coopPortalTimer = 0
+		Arena.updateCoopPortalBillboard(0, nil)
+	end
+
+	local nowClock = os.clock()
+	if nowClock >= nextChampionsSync then
+		nextChampionsSync = nowClock + 2.5
+		local heroEntries: { { name: string, lv: number, mp: number } } = {}
+		local killEntries: { { name: string, kills: number, souls: number } } = {}
+		for _, st in states do
+			local prof = DataService.getProfile(st.player)
+			local lv = if prof then prof.heroLevel else 1
+			local mp = if prof then prof.highestKeystoneCleared else 0
+			table.insert(heroEntries, { name = st.player.DisplayName, lv = lv, mp = mp })
+			table.insert(killEntries, { name = st.player.DisplayName, kills = st.bestKills, souls = st.souls })
+		end
+		table.sort(heroEntries, function(a, b)
+			if a.mp ~= b.mp then
+				return a.mp > b.mp
+			end
+			return a.lv > b.lv
+		end)
+		table.sort(killEntries, function(a, b)
+			if a.kills ~= b.kills then
+				return a.kills > b.kills
+			end
+			return a.souls > b.souls
+		end)
+		local westLines = { "<b>🏆 HALL OF CHAMPIONS</b>", "<font color='#9effd8'>Top Hero Level & Mythic+</font>" }
+		local eastLines =
+			{ "<b>💀 SLAYERS OF THE CRYPT</b>", "<font color='#ffd080'>Top Undying Kills & Souls</font>" }
+		for i = 1, math.min(3, #heroEntries) do
+			local e = heroEntries[i]
+			table.insert(westLines, string.format("#%d %s — Lv.%d (M+%d)", i, e.name, e.lv, e.mp))
+		end
+		for i = 1, math.min(3, #killEntries) do
+			local e = killEntries[i]
+			table.insert(eastLines, string.format("#%d %s — %d Kills (%d Souls)", i, e.name, e.kills, e.souls))
+		end
+		Arena.updateHallOfChampions(table.concat(westLines, "\n"), table.concat(eastLines, "\n"))
 	end
 
 	targets = buildTargets()

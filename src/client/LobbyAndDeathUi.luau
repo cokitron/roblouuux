@@ -1384,7 +1384,7 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		TextSize = 15,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = TEXT_GOLD,
-		Text = "📜 CRYPT SURVIVAL BRIEFING",
+		Text = "🏛️ SANCTUARY CHAPEL BRIEFING",
 	}, quickGuideCard)
 
 	create("TextLabel", {
@@ -1398,10 +1398,10 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		TextColor3 = TEXT_WHITE,
-		Text = "• <b>Move & Aim:</b> WASD / Thumbstick (Auto-attacks fire automatically; face foes with Cleaver).\n"
-			.. "• <b>Spectral Dash:</b> Press <b>[Space] / [Shift]</b> to dodge-burst!\n"
-			.. "• <b>3 Weapons + Evolutions:</b> Draft up to 3 weapons at Lv.3+ & rank up Primary DMG to <b>Evolve (🌟)</b>!\n"
-			.. "• <b>Objectives:</b> Ignite <b>Soul Braziers</b>, clear <b>Wave Bounties</b> & defeat the <b>10:00 Lich Lord</b>!",
+		Text = "• <b>West Aisle:</b> Walk over <b>6 Weapon Pedestals</b> to equip & preview.\n"
+			.. "• <b>East Combat Yard:</b> Attack <b>3 Target Dummies</b> with live DPS meter!\n"
+			.. "• <b>Central Soul Font:</b> Claim <b>+20 Ward & +10% Speed</b> before deploying.\n"
+			.. "• <b>South Narthex:</b> Step into the <b>Solo</b> or <b>Co-Op (+15% Souls)</b> Portal!",
 	}, quickGuideCard)
 
 	local openGuideBtn = create("TextButton", {
@@ -1478,6 +1478,32 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		local nextState = not shopOverlay.Visible
 		closeAllModals()
 		shopOverlay.Visible = nextState
+	end)
+
+	-- 3D Diegetic Sanctuary Chapel Alcove Stations -> Open Modal Trigger
+	local lastModalTrigger = ""
+	player:GetAttributeChangedSignal("OpenLobbyModal"):Connect(function()
+		local raw = player:GetAttribute("OpenLobbyModal")
+		if typeof(raw) ~= "string" or raw == "" or raw == lastModalTrigger then
+			return
+		end
+		lastModalTrigger = raw
+		local modalName = string.match(raw, "^(%a+)")
+		if not modalName then
+			return
+		end
+		closeAllModals()
+		if modalName == "Talents" then
+			talentOverlay.Visible = true
+		elseif modalName == "Armory" then
+			armoryOverlay.Visible = true
+		elseif modalName == "Keystone" then
+			keystoneOverlay.Visible = true
+		elseif modalName == "Shop" then
+			shopOverlay.Visible = true
+		elseif modalName == "Arsenal" then
+			arsenalOverlay.Visible = true
+		end
 	end)
 
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)

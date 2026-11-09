@@ -1116,6 +1116,433 @@ function GraveyardBuildings.buildCaretakerLodge(): Model
 end
 
 -- =====================================================================
+-- 5. Grand Sanctuary Chapel Interior (Playable Gothic Hub)
+-- Matches assets/solidcraft/sanctuary_chapel_interior.sc & .tcraft
+-- Footprint: 76 x 92 studs, Wall Height: 22 studs, Spire Height: 39 studs
+-- Local -Z = North Chancel (High Altar & Rose Window), +Z = South Narthex Portal
+-- =====================================================================
+function GraveyardBuildings.buildSanctuaryChapelInterior(): Model
+	local model = Instance.new("Model")
+	model.Name = "Sanctuary_Chapel_Interior"
+	createPivotBase(model, Vector3.new(76, 39, 92))
+
+	local stainedCyan = Color3.fromRGB(52, 230, 210)
+	local stainedViolet = Color3.fromRGB(168, 92, 245)
+	local stainedGold = Color3.fromRGB(255, 205, 85)
+
+	-- 1. BodyGroup: Chapel_Floor_Dais (Stepped North Chancel Dais & Side Aisle Galleries)
+	makePart({
+		name = "NaveProcessionalCarpet",
+		size = Vector3.new(10.5, 0.16, 68),
+		cframe = CFrame.new(0, 0.08, 6),
+		color = Color3.fromRGB(92, 24, 38),
+		material = Enum.Material.Fabric,
+		parent = model,
+	})
+	makePart({
+		name = "NaveCarpetGoldTrimW",
+		size = Vector3.new(0.35, 0.18, 68),
+		cframe = CFrame.new(-5.1, 0.09, 6),
+		color = BRONZE_ANTIQUE,
+		material = Enum.Material.Metal,
+		parent = model,
+	})
+	makePart({
+		name = "NaveCarpetGoldTrimE",
+		size = Vector3.new(0.35, 0.18, 68),
+		cframe = CFrame.new(5.1, 0.09, 6),
+		color = BRONZE_ANTIQUE,
+		material = Enum.Material.Metal,
+		parent = model,
+	})
+
+	-- 3-Step North Chancel Dais (-Z = -22 to -42)
+	makePart({
+		name = "ChancelDaisStep1",
+		size = Vector3.new(44, 0.8, 22),
+		cframe = CFrame.new(0, 0.4, -31),
+		color = STONE_MOSS,
+		material = Enum.Material.Cobblestone,
+		parent = model,
+	})
+	makePart({
+		name = "ChancelDaisStep2",
+		size = Vector3.new(38, 0.8, 18),
+		cframe = CFrame.new(0, 1.2, -33),
+		color = STONE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "ChancelDaisStep3",
+		size = Vector3.new(32, 0.8, 14),
+		cframe = CFrame.new(0, 2.0, -35),
+		color = STONE_MID,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+
+	-- Raised West Reliquary Gallery & East Combat Training Gallery Plinths
+	makePart({
+		name = "WestReliquaryPlinth",
+		size = Vector3.new(11, 0.6, 62),
+		cframe = CFrame.new(-28, 0.3, 3),
+		color = STONE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "EastTrainingPlinth",
+		size = Vector3.new(11, 0.6, 62),
+		cframe = CFrame.new(28, 0.3, 3),
+		color = STONE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+
+	-- 2. BodyGroup: Chapel_Nave_Walls & Exterior Flying Buttresses (22 studs tall)
+	local wallH = 22
+	local wallY = wallH * 0.5
+	-- North Chancel Apse Wall (z = -43)
+	makePart({
+		name = "NorthChancelWall",
+		size = Vector3.new(72, wallH, 2.6),
+		cframe = CFrame.new(0, wallY, -43),
+		color = STONE_MID,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	-- West & East Nave Walls (x = ±35.5)
+	for _, sx in ipairs({ -1, 1 }) do
+		makePart({
+			name = "NaveSideWall",
+			size = Vector3.new(2.6, wallH, 88),
+			cframe = CFrame.new(sx * 35.5, wallY, 0),
+			color = STONE_MID,
+			material = Enum.Material.Slate,
+			parent = model,
+		})
+		-- 4 Exterior Stepped Buttresses & Soaring Pinnacles per side
+		for _, bz in ipairs({ -33, -11, 11, 33 }) do
+			makePart({
+				name = "ExteriorButtressBase",
+				size = Vector3.new(2.8, 16, 3.2),
+				cframe = CFrame.new(sx * 37.6, 8, bz),
+				color = STONE_DARK,
+				material = Enum.Material.Cobblestone,
+				parent = model,
+			})
+			makePart({
+				name = "ExteriorButtressPinnacle",
+				size = Vector3.new(2.0, 9, 2.0),
+				cframe = CFrame.new(sx * 37.4, 20.5, bz),
+				color = STONE_LIGHT,
+				material = Enum.Material.Slate,
+				parent = model,
+			})
+		end
+		-- 3 Glowing Stained-Glass Lancet Windows per side (z = -22, 0, +22)
+		for idx, wz in ipairs({ -22, 0, 22 }) do
+			local glassColor = if idx == 2 then stainedViolet else stainedCyan
+			makePart({
+				name = "LancetWindowFrame",
+				size = Vector3.new(3.0, 11.5, 6.2),
+				cframe = CFrame.new(sx * 35.5, 11.8, wz),
+				color = IRON_DARK,
+				material = Enum.Material.CorrodedMetal,
+				parent = model,
+			})
+			local pane = makePart({
+				name = "LancetStainedGlass",
+				size = Vector3.new(3.2, 10.4, 5.2),
+				cframe = CFrame.new(sx * 35.5, 11.8, wz),
+				color = glassColor,
+				material = Enum.Material.Neon,
+				transparency = 0.25,
+				parent = model,
+				castShadow = false,
+			})
+			local wLight = Instance.new("PointLight")
+			wLight.Color = glassColor
+			wLight.Brightness = 1.35
+			wLight.Range = 22
+			wLight.Shadows = false
+			wLight.Parent = pane
+		end
+	end
+
+	-- South Narthex Entrance Wall with Grand Portal Archway Opening (z = +43)
+	makePart({
+		name = "SouthNarthexWallLeft",
+		size = Vector3.new(26, wallH, 2.6),
+		cframe = CFrame.new(-22.5, wallY, 43),
+		color = STONE_MID,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "SouthNarthexWallRight",
+		size = Vector3.new(26, wallH, 2.6),
+		cframe = CFrame.new(22.5, wallY, 43),
+		color = STONE_MID,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "SouthNarthexArchHeader",
+		size = Vector3.new(20, 6.5, 3.0),
+		cframe = CFrame.new(0, 18.75, 43),
+		color = STONE_LIGHT,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+
+	-- 3. BodyGroup: Chapel_Stained_Glass (North Chancel Rose Window)
+	makePart({
+		name = "NorthRoseWindowFrame",
+		size = Vector3.new(11.5, 11.5, 3.0),
+		cframe = CFrame.new(0, 14.5, -43) * CFrame.Angles(0, 0, math.pi * 0.25),
+		color = IRON_DARK,
+		material = Enum.Material.CorrodedMetal,
+		parent = model,
+	})
+	local roseGlass = makePart({
+		name = "NorthRoseStainedGlass",
+		size = Vector3.new(9.8, 9.8, 3.2),
+		cframe = CFrame.new(0, 14.5, -43) * CFrame.Angles(0, 0, math.pi * 0.25),
+		color = stainedCyan,
+		material = Enum.Material.Neon,
+		transparency = 0.18,
+		parent = model,
+		castShadow = false,
+	})
+	makePart({
+		name = "NorthRoseInnerMedallion",
+		size = Vector3.new(5.2, 5.2, 3.4),
+		cframe = CFrame.new(0, 14.5, -43),
+		color = stainedGold,
+		material = Enum.Material.Neon,
+		transparency = 0.15,
+		parent = model,
+		castShadow = false,
+	})
+	local roseLight = Instance.new("PointLight")
+	roseLight.Color = stainedCyan
+	roseLight.Brightness = 2.4
+	roseLight.Range = 36
+	roseLight.Shadows = false
+	roseLight.Parent = roseGlass
+
+	-- 4. BodyGroup: Chapel_Columns_Arches (8 Fluted Colonnade Pillars & Overhead Vault Ribs)
+	makePart({
+		name = "VaultLongitudinalSpine",
+		size = Vector3.new(3.2, 2.2, 84),
+		cframe = CFrame.new(0, 23.2, 0),
+		color = STONE_CREAM,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	for _, cz in ipairs({ -28, -10, 8, 26 }) do
+		makePart({
+			name = "VaultTransverseRib",
+			size = Vector3.new(68, 2.0, 2.4),
+			cframe = CFrame.new(0, 22.0, cz),
+			color = STONE_CREAM,
+			material = Enum.Material.Slate,
+			parent = model,
+		})
+		for _, sx in ipairs({ -1, 1 }) do
+			local cx = sx * 18.4
+			makePart({
+				name = "NaveColonnadeBase",
+				size = Vector3.new(3.6, 1.6, 3.6),
+				cframe = CFrame.new(cx, 0.8, cz),
+				color = STONE_DARK,
+				material = Enum.Material.Cobblestone,
+				parent = model,
+			})
+			makePart({
+				name = "NaveColonnadeShaft",
+				size = Vector3.new(2.4, 18.8, 2.4),
+				cframe = CFrame.new(cx, 10.6, cz),
+				color = STONE_CREAM,
+				material = Enum.Material.Slate,
+				parent = model,
+			})
+			makePart({
+				name = "NaveColonnadeCapital",
+				size = Vector3.new(3.6, 1.6, 3.6),
+				cframe = CFrame.new(cx, 20.4, cz),
+				color = STONE_LIGHT,
+				material = Enum.Material.Slate,
+				parent = model,
+			})
+		end
+	end
+
+	-- 2 Suspended Wrought-Iron & Soulfire Nave Chandeliers
+	for _, chZ in ipairs({ -19, 12 }) do
+		makePart({
+			name = "ChandelierChain",
+			size = Vector3.new(0.35, 6.0, 0.35),
+			cframe = CFrame.new(0, 19.2, chZ),
+			color = IRON_DARK,
+			material = Enum.Material.CorrodedMetal,
+			parent = model,
+		})
+		local wheel = makePart({
+			name = "ChandelierIronWheel",
+			size = Vector3.new(0.8, 7.2, 7.2),
+			cframe = CFrame.new(0, 16.0, chZ) * CFrame.Angles(0, 0, math.pi * 0.5),
+			color = BRONZE_ANTIQUE,
+			material = Enum.Material.Metal,
+			shape = Enum.PartType.Cylinder,
+			parent = model,
+		})
+		local chLight = Instance.new("PointLight")
+		chLight.Color = LANTERN_AMBER
+		chLight.Brightness = 2.2
+		chLight.Range = 34
+		chLight.Shadows = false
+		chLight.Parent = wheel
+	end
+
+	-- 5. BodyGroup: Chapel_Vault_Roof (Clerestory Cornice, South Gable & North Sanctus Bell Spire)
+	makePart({
+		name = "RoofCorniceNorth",
+		size = Vector3.new(75, 1.4, 8),
+		cframe = CFrame.new(0, 22.7, -40.5),
+		color = COBBLE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "RoofCorniceSouth",
+		size = Vector3.new(75, 1.4, 6),
+		cframe = CFrame.new(0, 22.7, 41.5),
+		color = COBBLE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "RoofCorniceWest",
+		size = Vector3.new(6, 1.4, 88),
+		cframe = CFrame.new(-34.5, 22.7, 0),
+		color = COBBLE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "RoofCorniceEast",
+		size = Vector3.new(6, 1.4, 88),
+		cframe = CFrame.new(34.5, 22.7, 0),
+		color = COBBLE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	-- North Sanctus Bell Spire & Gothic Cross
+	makePart({
+		name = "SanctusSpireTier1",
+		size = Vector3.new(36, 3.6, 14),
+		cframe = CFrame.new(0, 25.0, -38),
+		color = COBBLE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "SanctusSpireTier2",
+		size = Vector3.new(22, 3.0, 11),
+		cframe = CFrame.new(0, 28.3, -38),
+		color = STONE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "SanctusBelfryTower",
+		size = Vector3.new(9.2, 5.4, 9.2),
+		cframe = CFrame.new(0, 32.5, -38),
+		color = STONE_LIGHT,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "SanctusCrossShaft",
+		size = Vector3.new(1.1, 4.2, 1.1),
+		cframe = CFrame.new(0, 37.3, -38),
+		color = BRONZE_ANTIQUE,
+		material = Enum.Material.Metal,
+		parent = model,
+	})
+	makePart({
+		name = "SanctusCrossArm",
+		size = Vector3.new(3.4, 1.0, 1.0),
+		cframe = CFrame.new(0, 38.0, -38),
+		color = BRONZE_ANTIQUE,
+		material = Enum.Material.Metal,
+		parent = model,
+	})
+
+	-- 6. BodyGroup: Chapel_Altars_Reliquaries (High Altar on North Chancel Dais)
+	makePart({
+		name = "HighAltarBody",
+		size = Vector3.new(11.2, 3.4, 4.8),
+		cframe = CFrame.new(0, 4.1, -35.5),
+		color = STONE_DARK,
+		material = Enum.Material.Slate,
+		parent = model,
+	})
+	makePart({
+		name = "HighAltarBronzeMensa",
+		size = Vector3.new(12.4, 0.7, 5.6),
+		cframe = CFrame.new(0, 6.1, -35.5),
+		color = BRONZE_ANTIQUE,
+		material = Enum.Material.Metal,
+		parent = model,
+	})
+	makePart({
+		name = "HighAltarCrossV",
+		size = Vector3.new(0.8, 3.8, 0.8),
+		cframe = CFrame.new(0, 8.3, -36.5),
+		color = stainedGold,
+		material = Enum.Material.Neon,
+		parent = model,
+	})
+	makePart({
+		name = "HighAltarCrossH",
+		size = Vector3.new(2.8, 0.8, 0.8),
+		cframe = CFrame.new(0, 9.0, -36.5),
+		color = stainedGold,
+		material = Enum.Material.Neon,
+		parent = model,
+	})
+
+	-- 7. BodyGroup: Chapel_Oak_Pews_Dummies (8 Gothic Dark-Oak Pews flanking the central nave)
+	for _, pz in ipairs({ -12, -2, 8, 18 }) do
+		for _, sx in ipairs({ -1, 1 }) do
+			local px = sx * 9.8
+			makePart({
+				name = "ChapelOakPewSeat",
+				size = Vector3.new(8.0, 1.4, 2.2),
+				cframe = CFrame.new(px, 0.7, pz),
+				color = WOOD_DARK,
+				material = Enum.Material.WoodPlanks,
+				parent = model,
+			})
+			makePart({
+				name = "ChapelOakPewBack",
+				size = Vector3.new(8.0, 2.6, 0.55),
+				cframe = CFrame.new(px, 2.0, pz + 0.85),
+				color = WOOD_WEATHERED,
+				material = Enum.Material.WoodPlanks,
+				parent = model,
+			})
+		end
+	end
+
+	return model
+end
+
+-- =====================================================================
 -- Build All and Sync to ServerStorage.GraveyardBuildings
 -- =====================================================================
 function GraveyardBuildings.buildAll(): { [string]: Model }
@@ -1124,6 +1551,7 @@ function GraveyardBuildings.buildAll(): { [string]: Model }
 		Catacomb_Descent_Portal = GraveyardBuildings.buildCatacombDescentPortal(),
 		Mortuary_Chapel = GraveyardBuildings.buildMortuaryChapel(),
 		Caretaker_Lodge = GraveyardBuildings.buildCaretakerLodge(),
+		Sanctuary_Chapel_Interior = GraveyardBuildings.buildSanctuaryChapelInterior(),
 	}
 end
 

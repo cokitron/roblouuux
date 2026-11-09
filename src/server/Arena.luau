@@ -54,6 +54,15 @@ export type ReliquaryChest = {
 	model: Model?,
 }
 
+export type TrainingDummy = {
+	id: number,
+	name: string,
+	x: number,
+	y: number,
+	z: number,
+	radius: number,
+}
+
 local HALF = Constants.ARENA_HALF_SIZE
 local SIZE = HALF * 2
 local WALL_HEIGHT = 40
@@ -84,6 +93,13 @@ local cryptAnchors: { CryptAnchor } = {}
 local soulUrns: { SoulUrn } = {}
 local shrines: { BrazierShrine } = {}
 local reliquaryChests: { ReliquaryChest } = {}
+local trainingDummies: { TrainingDummy } = {}
+local dummyHits: { { t: number, dmg: number } } = {}
+local totalDummyDamage = 0
+local dpsMeterLabel: TextLabel? = nil
+local coopPortalLabel: TextLabel? = nil
+local championsWestLabel: TextLabel? = nil
+local championsEastLabel: TextLabel? = nil
 local prefabs: { [string]: Model } = {}
 
 local function makePart(props: {
@@ -782,6 +798,119 @@ local function buildPrefabTemplates(): { [string]: Model }
 		light.Shadows = false
 		light.Parent = blade
 		built.Relic_CryptCleaver = model
+	end
+
+	-- Relic_PhantomBow
+	do
+		local model = Instance.new("Model")
+		model.Name = "Relic_PhantomBow"
+		createPivotBase(model, Vector3.new(2.8, 3.6, 1.2))
+		local bowCf = CFrame.new(0, 1.9, 0) * CFrame.Angles(0, 0, math.rad(-18))
+		makePart({
+			name = "BowLimbUpper",
+			size = Vector3.new(0.28, 1.9, 0.32),
+			cframe = bowCf * CFrame.new(0.2, 0.85, 0) * CFrame.Angles(0, 0, math.rad(22)),
+			color = ROOT_BARK,
+			material = Enum.Material.WoodPlanks,
+			parent = model,
+		})
+		makePart({
+			name = "BowLimbLower",
+			size = Vector3.new(0.28, 1.9, 0.32),
+			cframe = bowCf * CFrame.new(0.2, -0.85, 0) * CFrame.Angles(0, 0, math.rad(-22)),
+			color = ROOT_BARK,
+			material = Enum.Material.WoodPlanks,
+			parent = model,
+		})
+		local arrow = makePart({
+			name = "SpectralArrowShaft",
+			size = Vector3.new(2.6, 0.22, 0.22),
+			cframe = bowCf * CFrame.new(0.3, 0, 0),
+			color = Color3.fromRGB(80, 255, 165),
+			material = Enum.Material.Neon,
+			parent = model,
+		})
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(80, 255, 165)
+		light.Brightness = 1.6
+		light.Range = 15
+		light.Shadows = false
+		light.Parent = arrow
+		built.Relic_PhantomBow = model
+	end
+
+	-- Relic_HexlockPistols
+	do
+		local model = Instance.new("Model")
+		model.Name = "Relic_HexlockPistols"
+		createPivotBase(model, Vector3.new(2.8, 3.2, 1.4))
+		for _, side in { -1, 1 } do
+			local pCf = CFrame.new(side * 0.35, 1.75, 0) * CFrame.Angles(0, 0, side * math.rad(28))
+			makePart({
+				name = "PistolGrip",
+				size = Vector3.new(0.34, 1.1, 0.38),
+				cframe = pCf * CFrame.new(0, -0.45, 0),
+				color = ROOT_BARK,
+				material = Enum.Material.WoodPlanks,
+				parent = model,
+			})
+			local barrel = makePart({
+				name = "HexBarrel",
+				size = Vector3.new(1.85, 0.36, 0.36),
+				cframe = pCf * CFrame.new(side * 0.55, 0.25, 0),
+				color = Color3.fromRGB(255, 95, 125),
+				material = Enum.Material.Neon,
+				parent = model,
+			})
+			if side == 1 then
+				local light = Instance.new("PointLight")
+				light.Color = Color3.fromRGB(255, 95, 125)
+				light.Brightness = 1.5
+				light.Range = 15
+				light.Shadows = false
+				light.Parent = barrel
+			end
+		end
+		built.Relic_HexlockPistols = model
+	end
+
+	-- Relic_StormcallerTome
+	do
+		local model = Instance.new("Model")
+		model.Name = "Relic_StormcallerTome"
+		createPivotBase(model, Vector3.new(2.6, 3.2, 2.2))
+		local tomeCf = CFrame.new(0, 1.85, 0) * CFrame.Angles(math.rad(-25), 0, 0)
+		makePart({
+			name = "TomeCoverLeft",
+			size = Vector3.new(1.25, 0.24, 1.75),
+			cframe = tomeCf * CFrame.new(-0.6, 0, 0) * CFrame.Angles(0, 0, math.rad(16)),
+			color = Color3.fromRGB(48, 36, 82),
+			material = Enum.Material.Slate,
+			parent = model,
+		})
+		makePart({
+			name = "TomeCoverRight",
+			size = Vector3.new(1.25, 0.24, 1.75),
+			cframe = tomeCf * CFrame.new(0.6, 0, 0) * CFrame.Angles(0, 0, math.rad(-16)),
+			color = Color3.fromRGB(48, 36, 82),
+			material = Enum.Material.Slate,
+			parent = model,
+		})
+		local runeCore = makePart({
+			name = "StormRuneCore",
+			size = Vector3.new(0.95, 0.95, 0.95),
+			cframe = CFrame.new(0, 2.55, 0) * CFrame.Angles(math.rad(35), math.rad(45), 0),
+			color = Color3.fromRGB(115, 210, 255),
+			material = Enum.Material.Neon,
+			parent = model,
+		})
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(115, 210, 255)
+		light.Brightness = 1.7
+		light.Range = 16
+		light.Shadows = false
+		light.Parent = runeCore
+		built.Relic_StormcallerTome = model
 	end
 
 	-- 15. Destructible Cursed Soul Urn (shatters for XP Gems & Soul Sparks when hit by auto-attacks)
@@ -2328,7 +2457,7 @@ function Arena.build()
 	prefabs = buildPrefabTemplates()
 	syncPrefabsToServerStorage()
 
-	-- Build the elevated Haunted Sanctuary Courtyard Lobby overlooking the North Gate
+	-- Build the Grand Sanctuary Chapel Interior Lobby (matches sanctuary_chapel_interior.sc & .tcraft)
 	do
 		local lobby = Instance.new("Folder")
 		lobby.Name = "SanctuaryLobby"
@@ -2336,10 +2465,10 @@ function Arena.build()
 
 		local ly = Constants.LOBBY_FLOOR_Y
 		local lobbyCenterZ = -294
-		local lobbyWidth = 84
-		local lobbyDepth = 88
+		local lobbyWidth = 76
+		local lobbyDepth = 92
 
-		-- Main cobblestone sanctuary terrace & lower stone retaining foundation
+		-- Main sanctuary chapel stone foundation & flagstone floor
 		makePart({
 			name = "SanctuaryFoundation",
 			size = Vector3.new(lobbyWidth + 4, ly, lobbyDepth + 4),
@@ -2359,23 +2488,16 @@ function Arena.build()
 			parent = lobby,
 			canCollide = true,
 		})
-		-- Central processional slate walkway from Spawn (-294) to the Catacomb Descent Portal (-262)
-		makePart({
-			name = "ProcessionalWalkway",
-			size = Vector3.new(14, 0.2, 54),
-			cframe = CFrame.new(0, ly + 0.1, -284),
-			color = STONE_MID,
-			material = Enum.Material.Slate,
-			parent = lobby,
-			canCollide = true,
-		})
 
-		-- Invisible boundary walls around the Sanctuary Courtyard so players cannot fall off the terrace
+		-- Spawn the Grand Sanctuary Chapel Interior (Walls, Rose Window, 6 Lancet Windows, 8 Columns, Vault Ribs, 8 Oak Pews, High Altar)
+		spawnPrefabAtY("Sanctuary_Chapel_Interior", 0, ly, lobbyCenterZ, 0, 1, 0, 0, lobby)
+
+		-- Invisible safety boundary walls aligned with the Chapel Nave perimeter
 		local lobbyWalls = {
-			{ Vector3.new(lobbyWidth, 24, 2), Vector3.new(0, ly + 12, lobbyCenterZ - lobbyDepth * 0.5) },
-			{ Vector3.new(lobbyWidth, 24, 2), Vector3.new(0, ly + 12, lobbyCenterZ + lobbyDepth * 0.5) },
-			{ Vector3.new(2, 24, lobbyDepth), Vector3.new(-lobbyWidth * 0.5, ly + 12, lobbyCenterZ) },
-			{ Vector3.new(2, 24, lobbyDepth), Vector3.new(lobbyWidth * 0.5, ly + 12, lobbyCenterZ) },
+			{ Vector3.new(lobbyWidth, 26, 2), Vector3.new(0, ly + 13, lobbyCenterZ - lobbyDepth * 0.5) },
+			{ Vector3.new(lobbyWidth, 26, 2), Vector3.new(0, ly + 13, lobbyCenterZ + lobbyDepth * 0.5) },
+			{ Vector3.new(2, 26, lobbyDepth), Vector3.new(-lobbyWidth * 0.5, ly + 13, lobbyCenterZ) },
+			{ Vector3.new(2, 26, lobbyDepth), Vector3.new(lobbyWidth * 0.5, ly + 13, lobbyCenterZ) },
 		}
 		for _, w in lobbyWalls do
 			makePart({
@@ -2390,15 +2512,9 @@ function Arena.build()
 			})
 		end
 
-		-- South Overlook Balcony Wrought-Iron Fence framing the Catacomb Descent Portal
-		for _, sideSign in { -1, 1 } do
-			for i = 1, 3 do
-				local fx = sideSign * (12 + i * 8)
-				spawnPrefabAtY("Graveyard_Fence", fx, ly, -252, 0, 1, 0, 0, lobby)
-			end
-		end
-
-		-- 1. South Overlook Portal: Catacomb_Descent_Portal at (0, 14, -262)
+		-- =====================================================================
+		-- PILLAR 4A: Solo Instant Catacomb Portal at South Narthex Archway (0, 14, -252)
+		-- =====================================================================
 		spawnPrefabAtY(
 			"Catacomb_Descent_Portal",
 			Constants.LOBBY_PORTAL_POS.X,
@@ -2411,7 +2527,6 @@ function Arena.build()
 			lobby
 		)
 
-		-- Glowing Runic Portal Vortex inside the Catacomb Descent Portal archway
 		local vortex = makePart({
 			name = "RunicPortalVortex",
 			size = Vector3.new(6.8, 9.2, 0.45),
@@ -2428,7 +2543,6 @@ function Arena.build()
 		vortexLight.Shadows = false
 		vortexLight.Parent = vortex
 
-		-- Glowing Portal Activation Ring on the floor in front of the steps
 		makePart({
 			name = "PortalTriggerRing",
 			size = Vector3.new(0.25, Constants.LOBBY_PORTAL_RADIUS * 2, Constants.LOBBY_PORTAL_RADIUS * 2),
@@ -2441,10 +2555,9 @@ function Arena.build()
 			parent = lobby,
 		})
 
-		-- Floating 3D Header Sign over the Runic Crypt Portal
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "PortalBillboard"
-		bb.Size = UDim2.fromOffset(320, 76)
+		bb.Size = UDim2.fromOffset(330, 76)
 		bb.StudsOffset = Vector3.new(0, 8.5, 0)
 		bb.AlwaysOnTop = true
 		bb.MaxDistance = 120
@@ -2458,144 +2571,482 @@ function Arena.build()
 		titleLabel.TextColor3 = Color3.fromRGB(165, 255, 235)
 		titleLabel.TextStrokeColor3 = Color3.fromRGB(10, 18, 22)
 		titleLabel.TextStrokeTransparency = 0.15
-		titleLabel.TextSize = 22
+		titleLabel.TextSize = 20
 		titleLabel.Text =
-			'<b>⚔️ CATACOMB PORTAL</b>\n<font size="15" color="#ffd878">Walk In or Click Deploy Below</font>'
+			'<b>⚔️ SOLO INSTANT PORTAL</b>\n<font size="14" color="#ffd878">Walk In for 0s Instant Drop-In</font>'
 		titleLabel.Parent = bb
 
-		-- 2. North Backdrop: Mortuary_Chapel at (0, 14, -326) facing South (yaw = math.pi)
-		spawnPrefabAtY("Mortuary_Chapel", 0, ly, -326, math.pi, 1, 0, 0, lobby)
+		-- =====================================================================
+		-- PILLAR 4B: Co-Op Squad Expedition Ring (1-4 Players, +15% Souls & +15 Ward)
+		-- =====================================================================
+		local coopPos = Constants.LOBBY_COOP_PORTAL_POS
+		local coopRing = makePart({
+			name = "CoopPortalTriggerRing",
+			size = Vector3.new(0.28, Constants.LOBBY_COOP_PORTAL_RADIUS * 2, Constants.LOBBY_COOP_PORTAL_RADIUS * 2),
+			cframe = CFrame.new(coopPos.X, ly + 0.16, coopPos.Z) * CFrame.Angles(0, 0, math.pi * 0.5),
+			color = Color3.fromRGB(255, 205, 70),
+			material = Enum.Material.Neon,
+			shape = Enum.PartType.Cylinder,
+			transparency = 0.35,
+			parent = lobby,
+		})
+		local coopBeacon = makePart({
+			name = "CoopPortalBeacon",
+			size = Vector3.new(10, 8.5, 8.5),
+			cframe = CFrame.new(coopPos.X, ly + 5.0, coopPos.Z) * CFrame.Angles(0, 0, math.pi * 0.5),
+			color = Color3.fromRGB(95, 245, 175),
+			material = Enum.Material.Neon,
+			shape = Enum.PartType.Cylinder,
+			transparency = 0.82,
+			parent = lobby,
+		})
+		local coopBb = Instance.new("BillboardGui")
+		coopBb.Name = "CoopPortalBillboard"
+		coopBb.Size = UDim2.fromOffset(320, 74)
+		coopBb.StudsOffset = Vector3.new(0, 6.2, 0)
+		coopBb.AlwaysOnTop = true
+		coopBb.MaxDistance = 110
+		coopBb.Parent = coopRing
+
+		local coopLbl = Instance.new("TextLabel")
+		coopLbl.Size = UDim2.fromScale(1, 1)
+		coopLbl.BackgroundTransparency = 1
+		coopLbl.Font = Enum.Font.GothamBlack
+		coopLbl.RichText = true
+		coopLbl.TextColor3 = Color3.fromRGB(255, 230, 120)
+		coopLbl.TextStrokeColor3 = Color3.fromRGB(8, 12, 18)
+		coopLbl.TextStrokeTransparency = 0.12
+		coopLbl.TextSize = 15
+		coopLbl.Text =
+			"🤝 CO-OP SQUAD RING (0/4)\n<font size='12' color='#9effd8'>Step In to Queue • +15% Souls & +15 Starting Ward!</font>"
+		coopLbl.Parent = coopBb
+		coopPortalLabel = coopLbl
+		local _ = coopBeacon
+
+		-- =====================================================================
+		-- PILLAR 6: Central Crossing Sanctuary Soul Font (0, 14, -296)
+		-- =====================================================================
+		local fontPos = Constants.LOBBY_SOUL_FONT_POS
 		makePart({
-			name = "LobbyChapelCollision",
-			size = Vector3.new(19, 18, 29),
-			cframe = CFrame.new(0, ly + 9, -326),
-			color = STONE_DARK,
-			material = Enum.Material.SmoothPlastic,
+			name = "SoulFontPedestal",
+			size = Vector3.new(5.6, 2.2, 5.6),
+			cframe = CFrame.new(fontPos.X, ly + 1.1, fontPos.Z),
+			color = BRONZE_PLAQUE,
+			material = Enum.Material.Metal,
 			parent = lobby,
 			canCollide = true,
-			transparency = 1,
 		})
-
-		-- 3. West Wing: Gothic_Mausoleum at (-29, 14, -286) facing East (yaw = -math.pi * 0.5)
-		spawnPrefabAtY("Gothic_Mausoleum", -29, ly, -286, -math.pi * 0.5, 1, 0, 0, lobby)
+		local fontBasin = makePart({
+			name = "SoulFontBasin",
+			size = Vector3.new(6.6, 0.75, 6.6),
+			cframe = CFrame.new(fontPos.X, ly + 2.4, fontPos.Z),
+			color = STONE_DARK,
+			material = Enum.Material.Slate,
+			parent = lobby,
+			canCollide = true,
+		})
 		makePart({
-			name = "LobbyMausoleumCollision",
-			size = Vector3.new(25, 16, 19),
-			cframe = CFrame.new(-29, ly + 8, -286),
-			color = STONE_DARK,
-			material = Enum.Material.SmoothPlastic,
+			name = "SoulFontWaterPool",
+			size = Vector3.new(5.4, 0.35, 5.4),
+			cframe = CFrame.new(fontPos.X, ly + 2.75, fontPos.Z),
+			color = RUNE_CYAN,
+			material = Enum.Material.Neon,
 			parent = lobby,
-			canCollide = true,
-			transparency = 1,
 		})
+		spawnPrefabAtY("Relic_SoulCrystal", fontPos.X, ly + 2.8, fontPos.Z, 0, 1.05, 0, 0, lobby)
 
-		-- 4. East Wing: Caretaker_Lodge at (29, 14, -286) facing West (yaw = math.pi * 0.5)
-		spawnPrefabAtY("Caretaker_Lodge", 29, ly, -286, math.pi * 0.5, 1, 0, 0, lobby)
-		makePart({
-			name = "LobbyLodgeCollision",
-			size = Vector3.new(15, 14, 17),
-			cframe = CFrame.new(29, ly + 7, -286),
-			color = STONE_DARK,
-			material = Enum.Material.SmoothPlastic,
-			parent = lobby,
-			canCollide = true,
-			transparency = 1,
-		})
+		local fontBb = Instance.new("BillboardGui")
+		fontBb.Size = UDim2.fromOffset(290, 62)
+		fontBb.StudsOffset = Vector3.new(0, 6.4, 0)
+		fontBb.AlwaysOnTop = true
+		fontBb.MaxDistance = 95
+		fontBb.Parent = fontBasin
 
-		-- 5. Central Soul Altar & Relic Shrines flanking the walkway
-		-- West Soul Altar (Arcanist's Staff: Grave_Sarcophagus + Giant XpSoulCrystal + GuardianOrb & MagicBolt relics)
-		spawnPrefabAtY("Grave_Sarcophagus", -11.5, ly, -280, math.pi * 0.5, 1, 0, 0, lobby)
-		spawnPrefabAtY("Relic_SoulCrystal", -11.5, ly + 2.6, -280, 0, 1.15, 0, 0, lobby)
-		spawnPrefabAtY("Relic_GuardianOrb", -11.5, ly + 2.6, -283, 0, 1.0, 0, 0, lobby)
-		spawnPrefabAtY("Relic_MagicBolt", -11.5, ly + 2.6, -277, 0, 1.0, 0, 0, lobby)
-		local westAltar = makePart({
-			name = "LobbyWestAltarCollision",
-			size = Vector3.new(7.4, 3.6, 7.2),
-			cframe = CFrame.new(-11.5, ly + 1.8, -280),
-			color = STONE_DARK,
-			material = Enum.Material.SmoothPlastic,
-			parent = lobby,
-			canCollide = true,
-			transparency = 1,
-		})
-		local westPrompt = Instance.new("ProximityPrompt")
-		westPrompt.ActionText = "Equip"
-		westPrompt.ObjectText = "🔮 Arcanist's Staff"
-		westPrompt.HoldDuration = 0
-		westPrompt.MaxActivationDistance = 14
-		westPrompt.RequiresLineOfSight = false
-		westPrompt.Triggered:Connect(function(player)
-			local state = PlayerState.get(player)
-			if state then
-				PlayerState.setWeapon(state, "ArcanistStaff")
-			end
+		local fontLbl = Instance.new("TextLabel")
+		fontLbl.Size = UDim2.fromScale(1, 1)
+		fontLbl.BackgroundTransparency = 1
+		fontLbl.Font = Enum.Font.GothamBlack
+		fontLbl.RichText = true
+		fontLbl.TextColor3 = Color3.fromRGB(130, 255, 235)
+		fontLbl.TextStrokeColor3 = Color3.fromRGB(8, 12, 18)
+		fontLbl.TextStrokeTransparency = 0.1
+		fontLbl.TextSize = 15
+		fontLbl.Text =
+			"✨ SANCTUARY SOUL FONT\n<font size='12' color='#ffe898'>Press [E] for Free Run Blessing (+20 Ward & +10% Speed)</font>"
+		fontLbl.Parent = fontBb
+
+		local fontPrompt = Instance.new("ProximityPrompt")
+		fontPrompt.ActionText = "Claim Blessing"
+		fontPrompt.ObjectText = "✨ Sanctuary Soul Font (+20 Ward & +10% Speed)"
+		fontPrompt.HoldDuration = 0
+		fontPrompt.MaxActivationDistance = 14
+		fontPrompt.RequiresLineOfSight = false
+		fontPrompt.Triggered:Connect(function(player)
+			PlayerState.claimSanctuaryBlessing(player)
 		end)
-		westPrompt.Parent = westAltar
+		fontPrompt.Parent = fontBasin
 
-		-- East Soul Altar (Crypt Cleaver & Soulflame Lantern)
-		spawnPrefabAtY("Grave_Sarcophagus", 11.5, ly, -280, -math.pi * 0.5, 1, 0, 0, lobby)
-		spawnPrefabAtY("Relic_CryptCleaver", 11.5, ly + 2.6, -282, 0, 1.15, 0, 0, lobby)
-		spawnPrefabAtY("Graveyard_Lantern", 11.5, ly + 2.6, -278, 0, 1.1, 0, 0, lobby)
-		local eastAltar = makePart({
-			name = "LobbyEastAltarCollision",
-			size = Vector3.new(7.4, 3.6, 7.2),
-			cframe = CFrame.new(11.5, ly + 1.8, -280),
-			color = STONE_DARK,
-			material = Enum.Material.SmoothPlastic,
-			parent = lobby,
-			canCollide = true,
-			transparency = 1,
-		})
-		local cleaverPrompt = Instance.new("ProximityPrompt")
-		cleaverPrompt.ActionText = "Equip"
-		cleaverPrompt.ObjectText = "🪓 Crypt Cleaver"
-		cleaverPrompt.HoldDuration = 0
-		cleaverPrompt.MaxActivationDistance = 14
-		cleaverPrompt.RequiresLineOfSight = false
-		cleaverPrompt.Triggered:Connect(function(player)
-			local state = PlayerState.get(player)
-			if state then
-				PlayerState.setWeapon(state, "CryptCleaver")
+		-- =====================================================================
+		-- PILLAR 2: Complete 6-Weapon Reliquary Gallery along West Colonnade Aisle (X = -27.5)
+		-- =====================================================================
+		local weaponPedestals = {
+			{
+				id = "ArcanistStaff",
+				title = "🔮 Arcanist's Staff",
+				subtitle = "Homing Bolts • Evo: Astral Singularity",
+				prefab = "Relic_MagicBolt",
+				z = -265,
+				color = Color3.fromRGB(95, 225, 255),
+			},
+			{
+				id = "CryptCleaver",
+				title = "🪓 Crypt Cleaver",
+				subtitle = "150° Frontal Cone • Evo: Reaper's Guillotine",
+				prefab = "Relic_CryptCleaver",
+				z = -276,
+				color = Color3.fromRGB(205, 135, 255),
+			},
+			{
+				id = "SoulflameLantern",
+				title = "🏮 Soulflame Lantern",
+				subtitle = "Sacred Burn Zones • Evo: Purgatory Pyre",
+				prefab = "Graveyard_Lantern",
+				z = -287,
+				color = Color3.fromRGB(255, 185, 80),
+			},
+			{
+				id = "PhantomBow",
+				title = "🏹 Phantom Longbow",
+				subtitle = "High-Crit Piercing • Evo: Wraith Volley",
+				prefab = "Relic_PhantomBow",
+				z = -298,
+				color = Color3.fromRGB(95, 255, 170),
+			},
+			{
+				id = "HexlockPistols",
+				title = "🔫 Hexlock Pistols",
+				subtitle = "Rapid Twin-Shot • Evo: Dread Barrage",
+				prefab = "Relic_HexlockPistols",
+				z = -309,
+				color = Color3.fromRGB(255, 105, 135),
+			},
+			{
+				id = "StormcallerTome",
+				title = "⚡ Stormcaller Grimoire",
+				subtitle = "Chain Lightning • Evo: Tempest Supercell",
+				prefab = "Relic_StormcallerTome",
+				z = -320,
+				color = Color3.fromRGB(125, 210, 255),
+			},
+		}
+
+		for _, wp in weaponPedestals do
+			local px = -27.5
+			local ped = makePart({
+				name = "ReliquaryPedestal_" .. wp.id,
+				size = Vector3.new(3.4, 2.4, 3.4),
+				cframe = CFrame.new(px, ly + 1.8, wp.z),
+				color = BRONZE_PLAQUE,
+				material = Enum.Material.Metal,
+				parent = lobby,
+				canCollide = true,
+			})
+			makePart({
+				name = "ReliquaryCap_" .. wp.id,
+				size = Vector3.new(4.0, 0.45, 4.0),
+				cframe = CFrame.new(px, ly + 3.1, wp.z),
+				color = wp.color,
+				material = Enum.Material.Neon,
+				transparency = 0.25,
+				parent = lobby,
+			})
+			spawnPrefabAtY(wp.prefab, px, ly + 3.3, wp.z, math.pi * 0.5, 1.05, 0, 0, lobby)
+
+			local wBb = Instance.new("BillboardGui")
+			wBb.Size = UDim2.fromOffset(230, 52)
+			wBb.StudsOffset = Vector3.new(0, 4.8, 0)
+			wBb.AlwaysOnTop = true
+			wBb.MaxDistance = 75
+			wBb.Parent = ped
+
+			local wLbl = Instance.new("TextLabel")
+			wLbl.Size = UDim2.fromScale(1, 1)
+			wLbl.BackgroundTransparency = 1
+			wLbl.Font = Enum.Font.GothamBlack
+			wLbl.RichText = true
+			wLbl.TextColor3 = wp.color
+			wLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
+			wLbl.TextStrokeTransparency = 0.1
+			wLbl.TextSize = 13
+			wLbl.Text = string.format("%s\n<font size='11' color='#e2e8f0'>%s</font>", wp.title, wp.subtitle)
+			wLbl.Parent = wBb
+
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.ActionText = "Equip"
+			prompt.ObjectText = wp.title
+			prompt.HoldDuration = 0
+			prompt.MaxActivationDistance = 12
+			prompt.RequiresLineOfSight = false
+			prompt.Triggered:Connect(function(player)
+				local state = PlayerState.get(player)
+				if state then
+					PlayerState.setWeapon(state, wp.id)
+				end
+			end)
+			prompt.Parent = ped
+		end
+
+		-- =====================================================================
+		-- PILLAR 1: East Transept Combat Training Yard & 3 Target Dummies (X = +27.5)
+		-- =====================================================================
+		table.clear(trainingDummies)
+		local dummySpecs = {
+			{ id = 1, name = "🎯 Straw Target Dummy", z = -272, color = Color3.fromRGB(215, 175, 95), scale = 1.0 },
+			{
+				id = 2,
+				name = "🛡️ Armored Crypt Dummy",
+				z = -290,
+				color = Color3.fromRGB(130, 155, 190),
+				scale = 1.2,
+			},
+			{
+				id = 3,
+				name = "💀 Swarm Cluster Dummy",
+				z = -308,
+				color = Color3.fromRGB(190, 110, 235),
+				scale = 0.95,
+			},
+		}
+
+		for _, dm in dummySpecs do
+			local dx = 27.5
+			local dy = ly + 0.6
+			makePart({
+				name = "DummyBase_" .. dm.id,
+				size = Vector3.new(3.2, 0.5, 3.2),
+				cframe = CFrame.new(dx, dy + 0.25, dm.z),
+				color = STONE_DARK,
+				material = Enum.Material.Cobblestone,
+				parent = lobby,
+				canCollide = true,
+			})
+			makePart({
+				name = "DummyPost_" .. dm.id,
+				size = Vector3.new(0.8, 5.2 * dm.scale, 0.8),
+				cframe = CFrame.new(dx, dy + 2.6 * dm.scale, dm.z),
+				color = ROOT_BARK,
+				material = Enum.Material.WoodPlanks,
+				parent = lobby,
+				canCollide = true,
+			})
+			local torso = makePart({
+				name = "DummyTorso_" .. dm.id,
+				size = Vector3.new(2.2 * dm.scale, 2.8 * dm.scale, 2.2 * dm.scale),
+				cframe = CFrame.new(dx, dy + 3.4 * dm.scale, dm.z),
+				color = dm.color,
+				material = Enum.Material.Slate,
+				shape = Enum.PartType.Cylinder,
+				parent = lobby,
+				canCollide = true,
+			})
+			makePart({
+				name = "DummyCrossbar_" .. dm.id,
+				size = Vector3.new(0.65, 0.65, 4.2 * dm.scale),
+				cframe = CFrame.new(dx, dy + 4.1 * dm.scale, dm.z),
+				color = ROOT_BARK,
+				material = Enum.Material.WoodPlanks,
+				parent = lobby,
+			})
+			makePart({
+				name = "DummyHead_" .. dm.id,
+				size = Vector3.new(1.5 * dm.scale, 1.5 * dm.scale, 1.5 * dm.scale),
+				cframe = CFrame.new(dx, dy + 5.5 * dm.scale, dm.z),
+				color = dm.color,
+				material = Enum.Material.Cobblestone,
+				shape = Enum.PartType.Ball,
+				parent = lobby,
+			})
+
+			local dBb = Instance.new("BillboardGui")
+			dBb.Size = UDim2.fromOffset(200, 36)
+			dBb.StudsOffset = Vector3.new(0, 3.6, 0)
+			dBb.AlwaysOnTop = true
+			dBb.MaxDistance = 75
+			dBb.Parent = torso
+
+			local dLbl = Instance.new("TextLabel")
+			dLbl.Size = UDim2.fromScale(1, 1)
+			dLbl.BackgroundTransparency = 1
+			dLbl.Font = Enum.Font.GothamBlack
+			dLbl.TextColor3 = dm.color
+			dLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
+			dLbl.TextStrokeTransparency = 0.1
+			dLbl.TextSize = 13
+			dLbl.Text = dm.name
+			dLbl.Parent = dBb
+
+			if dm.id == 2 then
+				local dpsBb = Instance.new("BillboardGui")
+				dpsBb.Name = "SanctuaryDpsBillboard"
+				dpsBb.Size = UDim2.fromOffset(340, 74)
+				dpsBb.StudsOffset = Vector3.new(0, 6.8, 0)
+				dpsBb.AlwaysOnTop = true
+				dpsBb.MaxDistance = 100
+				dpsBb.Parent = torso
+
+				local dpsLbl = Instance.new("TextLabel")
+				dpsLbl.Size = UDim2.fromScale(1, 1)
+				dpsLbl.BackgroundTransparency = 1
+				dpsLbl.Font = Enum.Font.GothamBlack
+				dpsLbl.RichText = true
+				dpsLbl.TextColor3 = Color3.fromRGB(255, 225, 110)
+				dpsLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
+				dpsLbl.TextStrokeTransparency = 0.08
+				dpsLbl.TextSize = 15
+				dpsLbl.Text =
+					"⚔️ CHAPEL TRAINING YARD — LIVE DPS\n<font size='12' color='#9effd8'>Stand Nearby to Auto-Attack • Press [Space] to Dash!</font>"
+				dpsLbl.Parent = dpsBb
+				dpsMeterLabel = dpsLbl
 			end
-		end)
-		cleaverPrompt.Parent = eastAltar
 
-		local lanternPart = makePart({
-			name = "LanternAltarAnchor",
-			size = Vector3.new(3.5, 3.5, 3.5),
-			cframe = CFrame.new(11.5, ly + 2.6, -277),
-			color = STONE_DARK,
-			material = Enum.Material.SmoothPlastic,
-			parent = lobby,
-			canCollide = false,
-			transparency = 1,
-		})
-		local lanternPrompt = Instance.new("ProximityPrompt")
-		lanternPrompt.ActionText = "Equip"
-		lanternPrompt.ObjectText = "🏮 Soulflame Lantern"
-		lanternPrompt.HoldDuration = 0
-		lanternPrompt.MaxActivationDistance = 14
-		lanternPrompt.RequiresLineOfSight = false
-		lanternPrompt.Triggered:Connect(function(player)
-			local state = PlayerState.get(player)
-			if state then
-				PlayerState.setWeapon(state, "SoulflameLantern")
-			end
-		end)
-		lanternPrompt.Parent = lanternPart
+			table.insert(trainingDummies, {
+				id = dm.id,
+				name = dm.name,
+				x = dx,
+				y = dy + 3.2,
+				z = dm.z,
+				radius = 2.2 * dm.scale,
+			})
+		end
 
-		-- Flanking Obelisks, Lantern Posts, Tombstones, Dead Trees & Ground Clutter
+		-- =====================================================================
+		-- PILLAR 3: Diegetic 3D Chapel Alcove Stations (Talents, Armory, Keystone/Vault, Treasury)
+		-- =====================================================================
+		local stations = {
+			{
+				modal = "Talents",
+				title = "✨ HIGH ALTAR OF TALENTS [N]",
+				subtitle = "Spend Soul Points & Unlock Class Ascendancies",
+				pos = Vector3.new(0, ly + 2.4, -325),
+				color = Color3.fromRGB(185, 130, 255),
+			},
+			{
+				modal = "Armory",
+				title = "🛡️ SACRISTY ARMORY & GRIMOIRE [C / B]",
+				subtitle = "Equip Relics, Enchant Gear & View Bestiary",
+				pos = Vector3.new(-14.5, ly + 0.8, -325),
+				color = Color3.fromRGB(95, 215, 255),
+			},
+			{
+				modal = "Keystone",
+				title = "🗝️ MYTHIC+ KEYSTONE & GREAT VAULT [J]",
+				subtitle = "Activate +1 to +15 Affixes & Claim Weekly Loot",
+				pos = Vector3.new(14.5, ly + 0.8, -325),
+				color = Color3.fromRGB(255, 185, 65),
+			},
+			{
+				modal = "Shop",
+				title = "💎 SANCTUARY TREASURY & QUESTS [M / V]",
+				subtitle = "Claim Daily Quests, Streaks & Blessings",
+				pos = Vector3.new(16.5, ly + 0.2, -256),
+				color = Color3.fromRGB(95, 250, 175),
+			},
+		}
+
+		for _, st in stations do
+			local ring = makePart({
+				name = "ChapelStation_" .. st.modal,
+				size = Vector3.new(0.24, 6.2, 6.2),
+				cframe = CFrame.new(st.pos.X, st.pos.Y + 0.14, st.pos.Z) * CFrame.Angles(0, 0, math.pi * 0.5),
+				color = st.color,
+				material = Enum.Material.Neon,
+				shape = Enum.PartType.Cylinder,
+				transparency = 0.38,
+				parent = lobby,
+			})
+			local sBb = Instance.new("BillboardGui")
+			sBb.Size = UDim2.fromOffset(260, 56)
+			sBb.StudsOffset = Vector3.new(0, 4.4, 0)
+			sBb.AlwaysOnTop = true
+			sBb.MaxDistance = 85
+			sBb.Parent = ring
+
+			local sLbl = Instance.new("TextLabel")
+			sLbl.Size = UDim2.fromScale(1, 1)
+			sLbl.BackgroundTransparency = 1
+			sLbl.Font = Enum.Font.GothamBlack
+			sLbl.RichText = true
+			sLbl.TextColor3 = st.color
+			sLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
+			sLbl.TextStrokeTransparency = 0.1
+			sLbl.TextSize = 13
+			sLbl.Text = string.format("%s\n<font size='11' color='#e2e8f0'>%s</font>", st.title, st.subtitle)
+			sLbl.Parent = sBb
+
+			local sPrompt = Instance.new("ProximityPrompt")
+			sPrompt.ActionText = "Open " .. st.modal
+			sPrompt.ObjectText = st.title
+			sPrompt.HoldDuration = 0
+			sPrompt.MaxActivationDistance = 12
+			sPrompt.RequiresLineOfSight = false
+			sPrompt.Triggered:Connect(function(player)
+				player:SetAttribute("OpenLobbyModal", st.modal .. ";" .. tostring(os.clock()))
+			end)
+			sPrompt.Parent = ring
+		end
+
+		-- =====================================================================
+		-- PILLAR 5: Hall of Champions Steles flanking the North Chancel Steps
+		-- =====================================================================
 		for _, side in { -1, 1 } do
-			spawnPrefabAtY("Graveyard_Lantern", side * 8.5, ly, -267, 0, 1, 0, 0, lobby)
-			spawnPrefabAtY("Graveyard_Lantern", side * 8.5, ly, -296, 0, 1, 0, 0, lobby)
-			spawnPrefabAtY("Graveyard_Obelisk", side * 15, ly, -264, 0, 1.05, 0, 0, lobby)
-			spawnPrefabAtY("Grave_Arched", side * 14, ly, -274, side * 0.2, 1.05, 0, 0, lobby)
-			spawnPrefabAtY("Grave_Cross", side * 14, ly, -292, -side * 0.2, 1.05, 0, 0, lobby)
-			spawnPrefabAtY("Graveyard_DeadTree", side * 34, ly, -262, side * 0.8, 1.1, 0, 0, lobby)
-			spawnPrefabAtY("Graveyard_DeadTree", side * 34, ly, -310, -side * 0.6, 1.05, 0, 0, lobby)
-			spawnPrefabAtY("Ground_GrassTuft", side * 10.5, ly, -273, 0.4, 1.2, 0, 0, lobby)
-			spawnPrefabAtY("Ground_DeadRoots", side * 12.5, ly, -285, 1.1, 1.15, 0, 0, lobby)
-			spawnPrefabAtY("Ground_RubbleCluster", side * 9.5, ly, -290, 0.7, 1.15, 0, 0, lobby)
+			local stele = makePart({
+				name = if side == -1 then "HallOfChampionsWest" else "HallOfChampionsEast",
+				size = Vector3.new(4.2, 6.8, 0.8),
+				cframe = CFrame.new(side * 12.5, ly + 3.8, -315),
+				color = IRON_DARK,
+				material = Enum.Material.Slate,
+				parent = lobby,
+				canCollide = true,
+			})
+			makePart({
+				name = "SteleGoldFrame",
+				size = Vector3.new(4.5, 7.1, 0.6),
+				cframe = CFrame.new(side * 12.5, ly + 3.8, -315.1),
+				color = BRONZE_PLAQUE,
+				material = Enum.Material.Metal,
+				parent = lobby,
+			})
+			local hBb = Instance.new("BillboardGui")
+			hBb.Size = UDim2.fromOffset(230, 110)
+			hBb.StudsOffset = Vector3.new(0, 1.2, 0)
+			hBb.AlwaysOnTop = true
+			hBb.MaxDistance = 75
+			hBb.Parent = stele
+
+			local hLbl = Instance.new("TextLabel")
+			hLbl.Size = UDim2.fromScale(1, 1)
+			hLbl.BackgroundTransparency = 0.25
+			hLbl.BackgroundColor3 = Color3.fromRGB(14, 16, 24)
+			hLbl.Font = Enum.Font.GothamBold
+			hLbl.RichText = true
+			hLbl.TextColor3 = Color3.fromRGB(255, 225, 130)
+			hLbl.TextStrokeColor3 = Color3.fromRGB(6, 8, 12)
+			hLbl.TextStrokeTransparency = 0.15
+			hLbl.TextSize = 12
+			hLbl.Parent = hBb
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0, 6)
+			corner.Parent = hLbl
+
+			if side == -1 then
+				hLbl.Text =
+					"<b>🏆 HALL OF CHAMPIONS</b>\n<font color='#9effd8'>Top Hero Level & Mythic+</font>\nAwaiting Heroes..."
+				championsWestLabel = hLbl
+			else
+				hLbl.Text =
+					"<b>💀 SLAYERS OF THE CRYPT</b>\n<font color='#ffd080'>Top Undying Kills & Souls</font>\nAwaiting Heroes..."
+				championsEastLabel = hLbl
+			end
 		end
 	end
 
@@ -2604,6 +3055,62 @@ function Arena.build()
 
 	-- Initial randomized graveyard run layout
 	Arena.rebuild()
+end
+
+function Arena.getTrainingDummies(): { TrainingDummy }
+	return trainingDummies
+end
+
+function Arena.recordDummyHit(damage: number, isCrit: boolean)
+	local now = os.clock()
+	totalDummyDamage += damage
+	table.insert(dummyHits, { t = now, dmg = damage })
+	local idx = 1
+	local windowSum = 0
+	while idx <= #dummyHits do
+		if now - dummyHits[idx].t > 5.0 then
+			table.remove(dummyHits, idx)
+		else
+			windowSum += dummyHits[idx].dmg
+			idx += 1
+		end
+	end
+	local dps = math.floor(windowSum / 5.0 + 0.5)
+	if dpsMeterLabel then
+		local critTag = if isCrit then " <font color='#ff6888'>(CRIT!)</font>" else ""
+		dpsMeterLabel.Text = string.format(
+			"⚔️ CHAPEL TRAINING YARD — LIVE DPS: <font color='#55ffaa'>%d/s</font>\n<font size='12' color='#ffe898'>Last Hit: %d%s • Total Damage: %d</font>",
+			dps,
+			math.floor(damage + 0.5),
+			critTag,
+			math.floor(totalDummyDamage + 0.5)
+		)
+	end
+end
+
+function Arena.updateCoopPortalBillboard(queuedCount: number, remainingSec: number?)
+	if not coopPortalLabel then
+		return
+	end
+	if queuedCount > 0 and remainingSec ~= nil then
+		coopPortalLabel.Text = string.format(
+			"🤝 CO-OP SQUAD DEPLOYING (%d/4) — %.1fs!\n<font size='12' color='#55ffaa'>+15%% Co-Op Souls & +15 Starting Ward Active!</font>",
+			queuedCount,
+			math.max(0, remainingSec)
+		)
+	else
+		coopPortalLabel.Text =
+			"🤝 CO-OP SQUAD RING (0/4)\n<font size='12' color='#9effd8'>Step In to Queue • +15% Souls & +15 Starting Ward!</font>"
+	end
+end
+
+function Arena.updateHallOfChampions(westText: string, eastText: string)
+	if championsWestLabel then
+		championsWestLabel.Text = westText
+	end
+	if championsEastLabel then
+		championsEastLabel.Text = eastText
+	end
 end
 
 return Arena

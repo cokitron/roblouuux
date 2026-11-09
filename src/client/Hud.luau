@@ -386,7 +386,8 @@ function Hud.mount(playerGui: PlayerGui)
 	})
 
 	local function triggerDash()
-		if player:GetAttribute("Phase") ~= "InRun" or player:GetAttribute("Dead") == true then
+		local phase = player:GetAttribute("Phase")
+		if (phase ~= "InRun" and phase ~= "Lobby") or player:GetAttribute("Dead") == true then
 			return
 		end
 		sessionAction:FireServer("Dash")
