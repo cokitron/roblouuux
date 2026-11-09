@@ -81,10 +81,22 @@ function CameraController.start()
 			return
 		end
 		if newPhase == "Lobby" then
+			local root = character:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") and root.Position.Z > -(Constants.ARENA_HALF_SIZE + 25) then
+				local targetPos = Constants.LOBBY_SPAWN + Vector3.new(0, 3, 0)
+				root.AssemblyLinearVelocity = Vector3.zero
+				character:PivotTo(CFrame.lookAt(targetPos, targetPos + Vector3.new(0, 0, 1)))
+			end
 			task.delay(0.05, function()
 				alignCameraBehindCharacter(character, Vector3.new(0, 0, 1))
 			end)
 		elseif newPhase == "InRun" then
+			local root = character:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") and root.Position.Z < -(Constants.ARENA_HALF_SIZE + 15) then
+				local targetPos = Constants.ARENA_SPAWN + Vector3.new(0, 3, 0)
+				root.AssemblyLinearVelocity = Vector3.zero
+				character:PivotTo(CFrame.lookAt(targetPos, targetPos + Vector3.new(0, 0, -1)))
+			end
 			task.delay(0.05, function()
 				alignCameraBehindCharacter(character, Vector3.new(0, 0, -1))
 			end)

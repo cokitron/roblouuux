@@ -266,16 +266,34 @@ local function teleportCharacter(state: State, targetFloorPos: Vector3, lookDir:
 	local root = getRoot(state)
 	local now = os.clock()
 	local charPos = targetFloorPos + Vector3.new(0, 3, 0)
+	local targetCf = CFrame.lookAt(charPos, charPos + lookDir)
 	state.lastValidPosition = charPos
 	state.moveBudget = MOVE_BURST_STUDS
 	state.moveCheckedAt = now
 	state.moveGraceUntil = now + MOVE_SPAWN_GRACE
+	if state.character then
+		pcall(function()
+			state.character:PivotTo(targetCf)
+		end)
+	end
 	if root then
-		root.Anchored = anchorRoot
+		root.Anchored = true
 		root.AssemblyLinearVelocity = Vector3.zero
-		root.CFrame = CFrame.lookAt(charPos, charPos + lookDir)
+		root.AssemblyAngularVelocity = Vector3.zero
+		root.CFrame = targetCf
 		if not anchorRoot then
-			pcall(root.SetNetworkOwner, root, state.player)
+			task.delay(0.08, function()
+				if states[state.player] ~= state then
+					return
+				end
+				local curRoot = getRoot(state)
+				if curRoot and (state.phase == "Lobby" or (state.phase == "InRun" and not frozen)) then
+					curRoot.AssemblyLinearVelocity = Vector3.zero
+					curRoot.CFrame = targetCf
+					curRoot.Anchored = false
+					pcall(curRoot.SetNetworkOwner, curRoot, state.player)
+				end
+			end)
 		end
 	end
 end
@@ -945,7 +963,7 @@ local function checkMovement(state: State, position: Vector3, now: number): Vect
 	state.moveCheckedAt = now
 
 	local last = state.lastValidPosition
-	if last == nil or now < state.moveGraceUntil then
+	if last == nil then
 		state.lastValidPosition = position
 		return position
 	end
@@ -953,6 +971,16 @@ local function checkMovement(state: State, position: Vector3, now: number): Vect
 	local dx = position.X - last.X
 	local dz = position.Z - last.Z
 	local distance = math.sqrt(dx * dx + dz * dz)
+	if now < state.moveGraceUntil then
+		-- Reject stale pre-teleport client packets (e.g., still reporting Chapel Z=-252 right after teleporting to Arena Z=0)
+		if distance <= 28 then
+			state.lastValidPosition = position
+			return position
+		else
+			rubberBand(state, last, now)
+			return last
+		end
+	end
 	if distance <= state.moveBudget then
 		state.moveBudget -= distance
 		state.lastValidPosition = position
@@ -978,6 +1006,11 @@ local function buildTargets(): { Target }
 		if state.phase == "InRun" and state.alive then
 			local position = PlayerState.getPosition(state)
 			if position and math.isfinite(position.X) and math.isfinite(position.Y) and math.isfinite(position.Z) then
+				-- Safety guard: if character is still inside the Sanctuary Chapel region while InRun, force teleport to Arena Spawn
+				if position.Z < -(limit + 15) then
+					teleportCharacter(state, Constants.ARENA_SPAWN, Vector3.new(0, 0, -1), frozen)
+					position = Constants.ARENA_SPAWN + Vector3.new(0, 3, 0)
+				end
 				local prev = state.lastValidPosition
 				local dt = math.max(now - state.moveCheckedAt, 0.016)
 				local checked = checkMovement(state, position, now)
