@@ -277,23 +277,12 @@ local function teleportCharacter(state: State, targetFloorPos: Vector3, lookDir:
 		end)
 	end
 	if root then
-		root.Anchored = true
+		root.Anchored = anchorRoot
 		root.AssemblyLinearVelocity = Vector3.zero
 		root.AssemblyAngularVelocity = Vector3.zero
 		root.CFrame = targetCf
 		if not anchorRoot then
-			task.delay(0.08, function()
-				if states[state.player] ~= state then
-					return
-				end
-				local curRoot = getRoot(state)
-				if curRoot and (state.phase == "Lobby" or (state.phase == "InRun" and not frozen)) then
-					curRoot.AssemblyLinearVelocity = Vector3.zero
-					curRoot.CFrame = targetCf
-					curRoot.Anchored = false
-					pcall(curRoot.SetNetworkOwner, curRoot, state.player)
-				end
-			end)
+			pcall(root.SetNetworkOwner, root, state.player)
 		end
 	end
 end
@@ -1006,10 +995,11 @@ local function buildTargets(): { Target }
 		if state.phase == "InRun" and state.alive then
 			local position = PlayerState.getPosition(state)
 			if position and math.isfinite(position.X) and math.isfinite(position.Y) and math.isfinite(position.Z) then
-				-- Safety guard: if character is still inside the Sanctuary Chapel region while InRun, force teleport to Arena Spawn
-				if position.Z < -(limit + 15) then
+				-- Safety guard: if character is still inside the Sanctuary Chapel region (Z < -242 or Y > 11),
+				-- re-teleport them to Arena Spawn and do not spawn/fight with a phantom target until they arrive in the Graveyard!
+				if position.Z < -(limit + 2) or position.Y > 11 then
 					teleportCharacter(state, Constants.ARENA_SPAWN, Vector3.new(0, 0, -1), frozen)
-					position = Constants.ARENA_SPAWN + Vector3.new(0, 3, 0)
+					continue
 				end
 				local prev = state.lastValidPosition
 				local dt = math.max(now - state.moveCheckedAt, 0.016)

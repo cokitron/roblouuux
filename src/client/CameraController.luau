@@ -75,6 +75,7 @@ function CameraController.start()
 		if newPhase == lastPhase then
 			return
 		end
+		local prevPhase = lastPhase
 		lastPhase = newPhase
 		local character = player.Character
 		if not character then
@@ -82,7 +83,7 @@ function CameraController.start()
 		end
 		if newPhase == "Lobby" then
 			local root = character:FindFirstChild("HumanoidRootPart")
-			if root and root:IsA("BasePart") and root.Position.Z > -(Constants.ARENA_HALF_SIZE + 25) then
+			if root and root:IsA("BasePart") then
 				local targetPos = Constants.LOBBY_SPAWN + Vector3.new(0, 3, 0)
 				root.AssemblyLinearVelocity = Vector3.zero
 				character:PivotTo(CFrame.lookAt(targetPos, targetPos + Vector3.new(0, 0, 1)))
@@ -92,7 +93,7 @@ function CameraController.start()
 			end)
 		elseif newPhase == "InRun" then
 			local root = character:FindFirstChild("HumanoidRootPart")
-			if root and root:IsA("BasePart") and root.Position.Z < -(Constants.ARENA_HALF_SIZE + 15) then
+			if root and root:IsA("BasePart") and prevPhase ~= "Downed" then
 				local targetPos = Constants.ARENA_SPAWN + Vector3.new(0, 3, 0)
 				root.AssemblyLinearVelocity = Vector3.zero
 				character:PivotTo(CFrame.lookAt(targetPos, targetPos + Vector3.new(0, 0, -1)))
@@ -100,6 +101,34 @@ function CameraController.start()
 			task.delay(0.05, function()
 				alignCameraBehindCharacter(character, Vector3.new(0, 0, -1))
 			end)
+		end
+	end)
+
+	-- Continuous client-side phase position guard so client-owned physics can never remain in the Chapel during InRun
+	RunService.Heartbeat:Connect(function()
+		local character = player.Character
+		if not character then
+			return
+		end
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not root or not root:IsA("BasePart") then
+			return
+		end
+		local phase = player:GetAttribute("Phase")
+		if phase == "InRun" then
+			if root.Position.Z < -(Constants.ARENA_HALF_SIZE + 2) or root.Position.Y > 11 then
+				local targetPos = Constants.ARENA_SPAWN + Vector3.new(0, 3, 0)
+				root.AssemblyLinearVelocity = Vector3.zero
+				character:PivotTo(CFrame.lookAt(targetPos, targetPos + Vector3.new(0, 0, -1)))
+				alignCameraBehindCharacter(character, Vector3.new(0, 0, -1))
+			end
+		elseif phase == "Lobby" then
+			if root.Position.Z > -(Constants.ARENA_HALF_SIZE + 6) or root.Position.Y < 10 then
+				local targetPos = Constants.LOBBY_SPAWN + Vector3.new(0, 3, 0)
+				root.AssemblyLinearVelocity = Vector3.zero
+				character:PivotTo(CFrame.lookAt(targetPos, targetPos + Vector3.new(0, 0, 1)))
+				alignCameraBehindCharacter(character, Vector3.new(0, 0, 1))
+			end
 		end
 	end)
 end

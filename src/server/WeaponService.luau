@@ -101,8 +101,8 @@ local function getWeapons(player: Player): PlayerWeapons
 end
 
 local function onUrnShattered(ux: number, uz: number, state: State)
-	GemService.spawn(Vector3.new(ux + 1.2, 0, uz))
-	GemService.spawn(Vector3.new(ux - 1.2, 0, uz))
+	GemService.spawn(Vector3.new(ux + 1.2, 0, uz), 2)
+	GemService.spawn(Vector3.new(ux - 1.2, 0, uz), 2)
 	state.health = math.min(state.maxHealth, state.health + 8)
 	state.player:SetAttribute("Health", math.ceil(state.health))
 	Replication.queueShockwave(ux, uz, 6)
@@ -958,7 +958,7 @@ function WeaponService.step(dt: number)
 							weapons.boltShots += 1
 							local isOvercharge = (weapons.boltShots % 4 == 0)
 							local isCrit = rng:NextNumber() < state.critChance
-							local critMult = if isCrit then state.critDamageMultiplier else 1.0
+							local critMult = if isCrit then state.critMultiplier else 1.0
 							local finalDmg =
 								math.max(1, math.floor(rawDmg * critMult * (if isOvercharge then 1.45 else 1.0) + 0.5))
 							local critTier = if isCrit then (if isOvercharge then 2 else 1) else 0
