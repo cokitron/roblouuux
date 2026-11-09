@@ -6,6 +6,7 @@ local CameraController = require(script.CameraController)
 local Hud = require(script.Hud)
 local LevelUpUi = require(script.LevelUpUi)
 local LobbyAndDeathUi = require(script.LobbyAndDeathUi)
+local MusicController = require(script.MusicController)
 local WorldRenderer = require(script.WorldRenderer)
 
 local player = Players.LocalPlayer
@@ -18,3 +19,4 @@ WorldRenderer.start()
 Hud.mount(playerGui)
 LevelUpUi.mount(playerGui)
 LobbyAndDeathUi.mount(playerGui)
+MusicController.mount(playerGui)
