@@ -116,6 +116,13 @@ export type State = {
 	bountyKills: number,
 	bountyExpiresClock: number,
 	nextBountyClock: number,
+	ccKind: string,
+	ccExpiresAt: number,
+	ccExpiresClock: number,
+	ccImmuneUntil: number,
+	ccSourceX: number,
+	ccSourceZ: number,
+	tenacityMult: number,
 }
 
 export type Enemy = {
@@ -141,6 +148,7 @@ export type Enemy = {
 	chargeUntil: number,
 	chargeDirX: number,
 	chargeDirZ: number,
+	ccCooldown: number,
 	dead: boolean,
 	isBoss: boolean,
 	orbHitAt: { [number]: number },

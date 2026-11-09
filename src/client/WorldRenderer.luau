@@ -1351,6 +1351,8 @@ function WorldRenderer.start()
 	end
 
 	local aimChevronPart: Part? = nil
+	local ccRingPart: Part? = nil
+	local ccPrismPart: Part? = nil
 	local function getOrCreateAimChevron(): Part
 		if aimChevronPart then
 			return aimChevronPart
@@ -1372,6 +1374,44 @@ function WorldRenderer.start()
 		return part
 	end
 
+	local function getOrCreateCcVisuals(): (Part, Part)
+		if ccRingPart and ccPrismPart then
+			return ccRingPart, ccPrismPart
+		end
+		local ring = Instance.new("Part")
+		ring.Name = "CcStatusRing"
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Size = Vector3.new(0.14, 5.2, 5.2)
+		ring.Anchored = true
+		ring.CanCollide = false
+		ring.CanTouch = false
+		ring.CanQuery = false
+		ring.CastShadow = false
+		ring.Material = Enum.Material.Neon
+		ring.Color = Color3.fromRGB(95, 240, 255)
+		ring.Transparency = 0.35
+		ring.CFrame = CFrame.new(0, -500, 0)
+		ring.Parent = folder
+
+		local prism = Instance.new("Part")
+		prism.Name = "CcStatusPrism"
+		prism.Size = Vector3.new(3.8, 5.4, 3.8)
+		prism.Anchored = true
+		prism.CanCollide = false
+		prism.CanTouch = false
+		prism.CanQuery = false
+		prism.CastShadow = false
+		prism.Material = Enum.Material.Glass
+		prism.Color = Color3.fromRGB(110, 235, 255)
+		prism.Transparency = 0.45
+		prism.CFrame = CFrame.new(0, -500, 0)
+		prism.Parent = folder
+
+		ccRingPart = ring
+		ccPrismPart = prism
+		return ring, prism
+	end
+
 	local function updatePlayerWeapons(serverNow: number)
 		local now = os.clock()
 		local localPlayer = Players.LocalPlayer
@@ -1383,6 +1423,7 @@ function WorldRenderer.start()
 
 			if player == localPlayer then
 				local chevron = getOrCreateAimChevron()
+				local ccRing, ccPrism = getOrCreateCcVisuals()
 				if
 					player:GetAttribute("Phase") == "InRun"
 					and player:GetAttribute("Dead") ~= true
@@ -1405,8 +1446,55 @@ function WorldRenderer.start()
 						chevron.Transparency = if isCleaver then 0.35 else 0.62
 						chevron.CFrame = CFrame.lookAt(pos, pos + flatLook)
 					end
+
+					local ccKindRaw = player:GetAttribute("CcKind")
+					local ccKind = if typeof(ccKindRaw) == "string" then ccKindRaw else ""
+					local ccExpRaw = player:GetAttribute("CcExpiresClock")
+					local ccExp = if typeof(ccExpRaw) == "number" then ccExpRaw else 0
+					if ccKind ~= "" and serverNow < ccExp then
+						local spin = serverNow * 4.5
+						ccRing.CFrame = CFrame.new(root.Position.X, 0.22, root.Position.Z)
+							* CFrame.Angles(0, spin, math.pi / 2)
+						if ccKind == "Freeze" then
+							ccRing.Color = Color3.fromRGB(95, 240, 255)
+							ccPrism.Color = Color3.fromRGB(115, 235, 255)
+							ccPrism.Size = Vector3.new(3.8, 5.4, 3.8)
+							ccPrism.Transparency = 0.42
+							ccPrism.CFrame = CFrame.new(root.Position.X, root.Position.Y, root.Position.Z)
+								* CFrame.Angles(0, spin * 0.3, 0)
+						elseif ccKind == "Confuse" then
+							ccRing.Color = Color3.fromRGB(215, 110, 255)
+							ccPrism.Color = Color3.fromRGB(255, 225, 85)
+							ccPrism.Size = Vector3.new(2.2, 0.45, 2.2)
+							ccPrism.Transparency = 0.25
+							ccPrism.CFrame = CFrame.new(root.Position.X, root.Position.Y + 3.2, root.Position.Z)
+								* CFrame.Angles(0.35, spin * 2.2, 0.35)
+						elseif ccKind == "Charm" then
+							ccRing.Color = Color3.fromRGB(255, 95, 195)
+							local sxRaw = player:GetAttribute("CcSourceX")
+							local szRaw = player:GetAttribute("CcSourceZ")
+							local sx = if typeof(sxRaw) == "number" then sxRaw else root.Position.X
+							local sz = if typeof(szRaw) == "number" then szRaw else root.Position.Z
+							local midX = (root.Position.X + sx) * 0.5
+							local midZ = (root.Position.Z + sz) * 0.5
+							local tDist =
+								math.clamp(math.sqrt((sx - root.Position.X) ^ 2 + (sz - root.Position.Z) ^ 2), 1, 24)
+							ccPrism.Color = Color3.fromRGB(255, 105, 205)
+							ccPrism.Size = Vector3.new(0.35, 0.35, tDist)
+							ccPrism.Transparency = 0.30
+							ccPrism.CFrame = CFrame.lookAt(Vector3.new(midX, 2.2, midZ), Vector3.new(sx, 2.2, sz))
+						else -- Snare
+							ccRing.Color = Color3.fromRGB(95, 255, 135)
+							ccPrism.CFrame = CFrame.new(0, -500, 0)
+						end
+					else
+						ccRing.CFrame = CFrame.new(0, -500, 0)
+						ccPrism.CFrame = CFrame.new(0, -500, 0)
+					end
 				else
 					chevron.CFrame = CFrame.new(0, -500, 0)
+					ccRing.CFrame = CFrame.new(0, -500, 0)
+					ccPrism.CFrame = CFrame.new(0, -500, 0)
 				end
 			end
 

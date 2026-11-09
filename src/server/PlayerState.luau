@@ -120,6 +120,10 @@ local function publish(state: State)
 	player:SetAttribute("BountyTarget", state.bountyTarget)
 	player:SetAttribute("BountyKills", state.bountyKills)
 	player:SetAttribute("BountyExpiresClock", state.bountyExpiresClock)
+	player:SetAttribute("CcKind", state.ccKind)
+	player:SetAttribute("CcExpiresClock", state.ccExpiresClock)
+	player:SetAttribute("CcSourceX", state.ccSourceX)
+	player:SetAttribute("CcSourceZ", state.ccSourceZ)
 end
 
 local function getHumanoid(state: State): Humanoid?
@@ -139,8 +143,21 @@ end
 local function applyHumanoidStats(state: State)
 	local humanoid = getHumanoid(state)
 	if humanoid then
-		local dashMult = if os.clock() < state.dashEndsAt then Constants.DASH_SPEED_MULT else 1
-		humanoid.WalkSpeed = Constants.PLAYER_WALK_SPEED * state.moveSpeedMultiplier * dashMult
+		local now = os.clock()
+		local dashMult = if now < state.dashEndsAt then Constants.DASH_SPEED_MULT else 1
+		local ccMult = 1.0
+		if state.ccKind ~= "" and now < state.ccExpiresAt then
+			if state.ccKind == "Freeze" then
+				ccMult = 0.08
+			elseif state.ccKind == "Snare" then
+				ccMult = Constants.CC_SNARE_SLOW_MULT
+			elseif state.ccKind == "Charm" then
+				ccMult = 0.55
+			elseif state.ccKind == "Confuse" then
+				ccMult = 0.78
+			end
+		end
+		humanoid.WalkSpeed = Constants.PLAYER_WALK_SPEED * state.moveSpeedMultiplier * dashMult * ccMult
 		humanoid.UseJumpPower = false
 		humanoid.JumpHeight = 0
 	end
@@ -374,6 +391,13 @@ function PlayerState.reset(player: Player, character: Model): State
 		bountyKills = 0,
 		bountyExpiresClock = 0,
 		nextBountyClock = 0,
+		ccKind = "",
+		ccExpiresAt = 0,
+		ccExpiresClock = 0,
+		ccImmuneUntil = 0,
+		ccSourceX = 0,
+		ccSourceZ = 0,
+		tenacityMult = 1,
 	}
 	states[player] = state
 	applyHumanoidStats(state)
@@ -510,6 +534,13 @@ function PlayerState.startRun(state: State): boolean
 	state.bountyKills = 0
 	state.bountyExpiresClock = state.runStart + 40
 	state.nextBountyClock = state.runStart + 40
+	state.ccKind = ""
+	state.ccExpiresAt = 0
+	state.ccExpiresClock = 0
+	state.ccImmuneUntil = os.clock() + Constants.SPAWN_IMMUNE_SECONDS
+	state.ccSourceX = 0
+	state.ccSourceZ = 0
+	state.tenacityMult = 1
 	state.player:SetAttribute("DashReadyClock", 0)
 	state.player:SetAttribute("FieldEventBanner", "")
 
@@ -982,6 +1013,91 @@ function PlayerState.grantReliquaryChest(state: State, isBossChest: boolean)
 	publish(state)
 end
 
+function PlayerState.applyCrowdControl(
+	state: State,
+	ccKind: string,
+	baseDuration: number,
+	sourceX: number,
+	sourceZ: number
+): boolean
+	if state.phase ~= "InRun" or not state.alive or frozen then
+		return false
+	end
+	local now = os.clock()
+	if now < state.immuneUntil or now < state.dashEndsAt or now < state.ccImmuneUntil then
+		return false
+	end
+	local duration = math.max(0.35, baseDuration * state.tenacityMult)
+	state.ccKind = ccKind
+	state.ccExpiresAt = now + duration
+	state.ccExpiresClock = GameClock.now() + duration
+	state.ccSourceX = sourceX
+	state.ccSourceZ = sourceZ
+	local postImmune = if ccKind == "Snare" then 2.2 else Constants.CC_HARD_IMMUNE_SECONDS
+	state.ccImmuneUntil = now + duration + postImmune
+	state.moveBudget = math.min(MOVE_BURST_STUDS + 10, state.moveBudget + 8)
+
+	-- Refund 0.9s of Spectral Dash cooldown on Hard CC so skilled players can reactively Dash-Cleanse!
+	if ccKind ~= "Snare" and state.dashReadyAt > now + 0.5 then
+		state.dashReadyAt = math.max(now + 0.35, state.dashReadyAt - 0.9)
+		local rem = math.max(0, state.dashReadyAt - now)
+		state.player:SetAttribute("DashReadyClock", GameClock.now() + rem)
+	end
+
+	if ccKind == "Freeze" then
+		local root = getRoot(state)
+		if root then
+			root.AssemblyLinearVelocity = Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
+		end
+	end
+
+	applyHumanoidStats(state)
+	publish(state)
+	return true
+end
+
+function PlayerState.getMaxOffensivePowerRatio(elapsed: number): number
+	local expectedPower = 1.0 + (elapsed / 110) + (elapsed / 220) ^ 1.45
+	local maxRatio = 1.0
+	for _, state in states do
+		if state.phase == "InRun" and state.alive then
+			local weapons = math.max(1, #state.equippedWeapons)
+			local weaponFactor = 1.0 + (weapons - 1) * 0.65
+			local evolutions = 0
+			for _, evoId in
+				{
+					"evolve_staff",
+					"evolve_cleaver",
+					"evolve_lantern",
+					"evolve_bow",
+					"evolve_pistols",
+					"evolve_storm",
+				}
+			do
+				if (state.upgrades[evoId] or 0) >= 1 then
+					evolutions += 1
+				end
+			end
+			local maxDmgMult = math.max(
+				state.damageMultiplier,
+				state.cleaveDamageMultiplier,
+				state.cinderDamageMultiplier,
+				state.bowDamageMultiplier,
+				state.pistolDamageMultiplier,
+				state.stormDamageMultiplier
+			)
+			local hasteFactor = 1.0 / math.max(0.28, state.cooldownMultiplier)
+			local critFactor = 1.0 + state.critChance * (state.critMultiplier - 1.0) * 0.45
+			local rawPower = weaponFactor * maxDmgMult * hasteFactor * critFactor * (1.0 + evolutions * 0.35)
+			local ratio = rawPower / math.max(1.0, expectedPower)
+			if ratio > maxRatio then
+				maxRatio = ratio
+			end
+		end
+	end
+	return maxRatio
+end
+
 function PlayerState.dash(state: State): boolean
 	if state.phase ~= "InRun" or not state.alive or frozen then
 		return false
@@ -990,6 +1106,12 @@ function PlayerState.dash(state: State): boolean
 	if now < state.dashReadyAt then
 		return false
 	end
+	local brokeCc = state.ccKind ~= "" and now < state.ccExpiresAt
+	state.ccKind = ""
+	state.ccExpiresAt = 0
+	state.ccExpiresClock = 0
+	state.ccImmuneUntil = math.max(state.ccImmuneUntil, now + Constants.CC_DASH_CLEANSE_IMMUNE_SECONDS)
+
 	state.dashReadyAt = now + Constants.DASH_COOLDOWN
 	state.dashEndsAt = now + Constants.DASH_DURATION
 	state.immuneUntil = math.max(state.immuneUntil, now + Constants.DASH_IMMUNE_SECONDS)
@@ -1012,7 +1134,17 @@ function PlayerState.dash(state: State): boolean
 		EnemyService.shockwaveClear(root.Position, 10, 14 * state.damageMultiplier, 12, state)
 	end
 
+	if brokeCc then
+		state.player:SetAttribute(
+			"FieldEventBanner",
+			string.format(
+				"✨ SPECTRAL DASH SHATTERED CROWD-CONTROL! (Unstoppable 2.5s) (%d)",
+				math.floor(os.clock() * 10)
+			)
+		)
+	end
 	state.player:SetAttribute("DashReadyClock", GameClock.now() + Constants.DASH_COOLDOWN)
+	publish(state)
 	return true
 end
 
@@ -1230,6 +1362,45 @@ function PlayerState.step(dt: number)
 			if state.dashEndsAt > 0 and os.clock() >= state.dashEndsAt then
 				state.dashEndsAt = 0
 				applyHumanoidStats(state)
+			end
+			local nowClock = os.clock()
+			if state.ccKind ~= "" then
+				if nowClock >= state.ccExpiresAt then
+					state.ccKind = ""
+					state.ccExpiresAt = 0
+					state.ccExpiresClock = 0
+					applyHumanoidStats(state)
+					needPublish = true
+				else
+					local root = getRoot(state)
+					if root then
+						if state.ccKind == "Freeze" then
+							root.AssemblyLinearVelocity = Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
+						elseif state.ccKind == "Charm" then
+							local dx = state.ccSourceX - root.Position.X
+							local dz = state.ccSourceZ - root.Position.Z
+							local dist = math.sqrt(dx * dx + dz * dz)
+							if dist > 2.2 then
+								local pullSpeed = Constants.PLAYER_WALK_SPEED * state.moveSpeedMultiplier * 0.62
+								root.AssemblyLinearVelocity = Vector3.new(
+									(dx / dist) * pullSpeed,
+									root.AssemblyLinearVelocity.Y,
+									(dz / dist) * pullSpeed
+								)
+								state.moveBudget = math.min(MOVE_BURST_STUDS + 8, state.moveBudget + pullSpeed * dt)
+							end
+						elseif state.ccKind == "Confuse" then
+							local wobbleAngle = gameNow * 9.5 + state.player.UserId
+							local wSpeed = Constants.PLAYER_WALK_SPEED * state.moveSpeedMultiplier * 0.45
+							root.AssemblyLinearVelocity = Vector3.new(
+								math.cos(wobbleAngle) * wSpeed,
+								root.AssemblyLinearVelocity.Y,
+								math.sin(wobbleAngle) * wSpeed
+							)
+							state.moveBudget = math.min(MOVE_BURST_STUDS + 8, state.moveBudget + wSpeed * dt)
+						end
+					end
+				end
 			end
 			if state.regenPerSecond > 0 and state.health < state.maxHealth then
 				local displayedBefore = math.ceil(state.health)

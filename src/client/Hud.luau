@@ -255,7 +255,7 @@ function Hud.mount(playerGui: PlayerGui)
 			Font = Enum.Font.GothamBold,
 			TextSize = 11,
 			TextColor3 = WHITE,
-			Text = string.format("🔒 Slot %d (Lv.3+)", i),
+			Text = string.format("🔒 Slot %d (Lv.%d+)", i, if i == 2 then 4 else 8),
 		})
 		table.insert(arsenalSlots, {
 			frame = slotFrame,
@@ -263,6 +263,34 @@ function Hud.mount(playerGui: PlayerGui)
 			label = slotLbl,
 		})
 	end
+
+	-- Crowd-Control / Movement Impairment Alert Bar above Arsenal Row
+	local ccBarFrame = create("Frame", {
+		Name = "CcAlertBar",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -114),
+		Size = UDim2.fromOffset(420, 28),
+		BackgroundColor3 = Color3.fromRGB(22, 14, 38),
+		BackgroundTransparency = 0.08,
+		BorderSizePixel = 0,
+		Visible = false,
+	}, gui)
+	create("UICorner", { CornerRadius = UDim.new(0, 8) }, ccBarFrame)
+	local ccBarStroke = create("UIStroke", { Color = Color3.fromRGB(115, 240, 255), Thickness = 2 }, ccBarFrame)
+	local ccBarFill = create("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.fromRGB(25, 145, 215),
+		BorderSizePixel = 0,
+	}, ccBarFrame)
+	create("UICorner", { CornerRadius = UDim.new(0, 8) }, ccBarFill)
+	local ccBarLabel = createLabel(ccBarFrame, {
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 2,
+		Font = Enum.Font.GothamBlack,
+		TextSize = 12,
+		TextColor3 = WHITE,
+		Text = "",
+	})
 
 	-- Center Clock Pill
 	local timerPill = create("Frame", {
@@ -587,7 +615,7 @@ function Hud.mount(playerGui: PlayerGui)
 				slotUi.stroke.Color = Color3.fromRGB(72, 68, 110)
 				slotUi.frame.BackgroundColor3 = Color3.fromRGB(16, 12, 32)
 				slotUi.label.TextColor3 = Color3.fromRGB(165, 175, 205)
-				slotUi.label.Text = string.format("🔒 Slot %d (Lv.3+)", i)
+				slotUi.label.Text = string.format("🔒 Slot %d (Lv.%d+)", i, if i == 2 then 4 else 8)
 			end
 		end
 
@@ -703,6 +731,43 @@ function Hud.mount(playerGui: PlayerGui)
 			)
 		else
 			bountyLabel.Visible = false
+		end
+
+		local ccKindRaw = player:GetAttribute("CcKind")
+		local ccKind = if typeof(ccKindRaw) == "string" then ccKindRaw else ""
+		local ccExp = attribute("CcExpiresClock", 0)
+		local ccRem = ccExp - gameNow
+		if ccKind ~= "" and ccRem > 0.05 then
+			ccBarFrame.Visible = true
+			local maxDur = if ccKind == "Snare"
+				then Constants.CC_SNARE_DURATION
+				elseif ccKind == "Freeze" then Constants.CC_FREEZE_DURATION
+				elseif ccKind == "Confuse" then Constants.CC_CONFUSE_DURATION
+				else Constants.CC_CHARM_DURATION
+			ccBarFill.Size = UDim2.fromScale(math.clamp(ccRem / math.max(0.5, maxDur), 0, 1), 1)
+			if ccKind == "Freeze" then
+				ccBarStroke.Color = Color3.fromRGB(115, 240, 255)
+				ccBarFill.BackgroundColor3 = Color3.fromRGB(18, 138, 210)
+				ccBarLabel.Text =
+					string.format("❄️ FROZEN IN ICE (%.1fs) — Press [Space] DASH to Break Free!", ccRem)
+			elseif ccKind == "Confuse" then
+				ccBarStroke.Color = Color3.fromRGB(220, 125, 255)
+				ccBarFill.BackgroundColor3 = Color3.fromRGB(115, 32, 175)
+				ccBarLabel.Text =
+					string.format("🌀 MIND CONFUSED (%.1fs) — Controls Scrambled! [Space] DASH to Cleanse!", ccRem)
+			elseif ccKind == "Charm" then
+				ccBarStroke.Color = Color3.fromRGB(255, 115, 205)
+				ccBarFill.BackgroundColor3 = Color3.fromRGB(165, 24, 110)
+				ccBarLabel.Text =
+					string.format("💜 SIREN CHARMED (%.1fs) — Lured Toward Foe! [Space] DASH to Break!", ccRem)
+			else
+				ccBarStroke.Color = Color3.fromRGB(115, 255, 145)
+				ccBarFill.BackgroundColor3 = Color3.fromRGB(22, 130, 68)
+				ccBarLabel.Text =
+					string.format("🕸️ WEB SNARED (%.1fs) — -48%% Speed! [Space] DASH to Cleanse!", ccRem)
+			end
+		else
+			ccBarFrame.Visible = false
 		end
 	end)
 end

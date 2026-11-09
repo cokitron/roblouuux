@@ -139,30 +139,42 @@ local function spawnFormation(target: PlayerState.Target, healthMultiplier: numb
 	end
 end
 
-function Director.summonNextBoss(position: Vector3, keystoneLevel: number)
+local function computeHealthMultiplier(elapsed: number, keystoneLevel: number): number
 	local kInfo = RpgConfig.getKeystoneInfo(keystoneLevel)
+	local timeMult = 1 + (elapsed / 65) + (elapsed / 150) ^ 1.65
+	local powerRatio = PlayerState.getMaxOffensivePowerRatio(elapsed)
+	local adaptiveMult = math.clamp(math.sqrt(math.max(1.0, powerRatio)), 1.0, 2.35)
+	return timeMult * adaptiveMult * kInfo.enemyMult
+end
+
+function Director.summonNextBoss(position: Vector3, keystoneLevel: number)
+	local now = GameClock.now()
+	local elapsed = if roundStart then math.max(0, now - roundStart) else 60
+	local mult = computeHealthMultiplier(elapsed, keystoneLevel)
 	for _, entry in ipairs(BOSS_SCHEDULE) do
 		if not spawnedMilestones[entry.kind] then
 			spawnedMilestones[entry.kind] = true
 			local x, z = EnemyService.randomRingPosition(position)
-			EnemyService.spawn(entry.kind, Vector3.new(x, 0, z), kInfo.enemyMult)
+			EnemyService.spawn(entry.kind, Vector3.new(x, 0, z), mult)
 			return
 		end
 	end
 	local x, z = EnemyService.randomRingPosition(position)
-	EnemyService.spawn("LichLord", Vector3.new(x, 0, z), kInfo.enemyMult * 1.25)
+	EnemyService.spawn("LichLord", Vector3.new(x, 0, z), mult * 1.25)
 end
 
 function Director.summonMonsterKind(position: Vector3, kind: string, keystoneLevel: number)
 	if EnemyService.count() >= Constants.MAX_ENEMIES then
 		return
 	end
-	local kInfo = RpgConfig.getKeystoneInfo(keystoneLevel)
+	local now = GameClock.now()
+	local elapsed = if roundStart then math.max(0, now - roundStart) else 30
+	local mult = computeHealthMultiplier(elapsed, keystoneLevel)
 	local isBoss = kind == "GraveReaper" or kind == "HollowArmor" or kind == "OssuaryBehemoth" or kind == "LichLord"
 	local count = if isBoss then 1 else math.min(4, Constants.MAX_ENEMIES - EnemyService.count())
 	for _ = 1, count do
 		local x, z = EnemyService.randomRingPosition(position)
-		EnemyService.spawn(kind, Vector3.new(x, 0, z), kInfo.enemyMult)
+		EnemyService.spawn(kind, Vector3.new(x, 0, z), mult)
 	end
 end
 
@@ -190,8 +202,7 @@ function Director.step(dt: number)
 			maxKeystone = profile.selectedKeystone
 		end
 	end
-	local kInfo = RpgConfig.getKeystoneInfo(maxKeystone)
-	local healthMultiplier = (1 + elapsed / 120) * kInfo.enemyMult
+	local healthMultiplier = computeHealthMultiplier(elapsed, maxKeystone)
 
 	-- Interactive Landmark Soul Brazier Shrines
 	Arena.stepShrines(dt, targets, function(shrine, capturer)
@@ -222,7 +233,7 @@ function Director.step(dt: number)
 			spawnedMilestones[entry.kind] = true
 			local target = targets[rng:NextInteger(1, #targets)]
 			local bx, bz = EnemyService.randomRingPosition(target.position)
-			EnemyService.spawn(entry.kind, Vector3.new(bx, 0, bz), kInfo.enemyMult)
+			EnemyService.spawn(entry.kind, Vector3.new(bx, 0, bz), healthMultiplier)
 		end
 	end
 

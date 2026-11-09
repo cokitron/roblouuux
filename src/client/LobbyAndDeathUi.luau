@@ -1202,17 +1202,17 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 
 	local GUIDE_SECTIONS = {
 		{
-			title = "⚔️ 1. COMBAT, AIMING & SPECTRAL DASH",
+			title = "⚔️ 1. COMBAT, CROWD-CONTROL & DASH CLEANSE",
 			color = BORDER_CYAN,
-			body = "• <b>Auto-Attack:</b> Your hero fires automatically! Ranged weapons target the nearest threat; <b>Crypt Cleaver</b> sweeps a <b>125° Frontal Cone</b> in the direction you face (shown by your floor aim chevron).\n"
-				.. "• <b>Spectral Dash [Space / Shift / E]:</b> Burst forward with brief phase-dodge speed & shockwave knockback every <b>4.5s</b> to escape encirclements!\n"
-				.. "• <b>Critical Strikes:</b> Yellow <b>!</b> numbers deal 2x+ damage; Magenta <b>!!</b> numbers are Super-Crits!",
+			body = "• <b>Auto-Attack & Cleave:</b> Ranged weapons target nearest foes; <b>Crypt Cleaver</b> sweeps a <b>125° Frontal Cone</b> in the direction you face.\n"
+				.. "• <b>Monster Crowd-Control:</b> Watch out for <b>🕸️ Snare</b> (-48% Speed), <b>❄️ Freeze</b> (Ice Root), <b>🌀 Confuse</b> (Scrambled Steering) & <b>💜 Charm</b> (Siren Pull)!\n"
+				.. "• <b>Spectral Dash [Space / Shift / E]:</b> Instantly <b>breaks all Crowd-Control</b> and grants <b>2.5s Unstoppable Immunity</b> + shockwave knockback!",
 		},
 		{
 			title = "🌟 2. MULTI-WEAPON DRAFT & EVOLUTIONS",
 			color = BORDER_GOLD,
-			body = "• <b>Wield Up to 3 Weapons:</b> Starting at <b>Run Level 3</b>, Level-Up cards can offer <b>Arsenal Cards</b> to equip a 2nd and 3rd simultaneous weapon!\n"
-				.. "• <b>Legendary Evolutions:</b> Upgrade any weapon's <b>Primary Damage Talent to Rank 2+</b> to unlock its <b>🌟 EVOLUTION Capstone</b>:\n"
+			body = "• <b>Wield Up to 3 Weapons:</b> Unlock your <b>2nd Weapon at Lv.4+</b> and your <b>3rd Weapon at Lv.8+</b> via Arsenal Level-Up Cards!\n"
+				.. "• <b>Legendary Evolutions:</b> At <b>Lv.7+</b> with any weapon's <b>Primary Damage Talent at Rank 3+</b>, unlock its <b>🌟 EVOLUTION Capstone</b>:\n"
 				.. "  🔮 Staff → <i>Astral Starfall</i>   •   🪓 Cleaver → <i>Crimson Guillotine</i>\n"
 				.. "  🏮 Lantern → <i>Ashen Hellstorm</i>   •   🏹 Bow → <i>Thousand-Arrow Tempest</i>\n"
 				.. "  🔫 Pistols → <i>Silver Executioner</i>   •   ⚡ Tome → <i>Mjolnir's Wrath</i>",

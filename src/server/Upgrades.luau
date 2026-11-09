@@ -31,6 +31,17 @@ local function percent(value: number): string
 	return string.format("%d%%", math.floor(value * 100 + 0.5))
 end
 
+local function canUnlockWeapon(state: State, wId: string): boolean
+	local count = #state.equippedWeapons
+	if count >= Constants.MAX_EQUIPPED_WEAPONS or table.find(state.equippedWeapons, wId) ~= nil then
+		return false
+	end
+	if count == 1 then
+		return state.level >= 4
+	end
+	return state.level >= 8
+end
+
 local DEFINITIONS: { Definition } = {
 	-- =========================================================================
 	-- 1. ARCANIST'S STAFF TALENT TREE (Magic Bolt + Guardian Orb)
@@ -1017,9 +1028,7 @@ local DEFINITIONS: { Definition } = {
 			PS.unlockWeaponInRun(state, "PhantomBow", false)
 		end,
 		requires = function(state)
-			return state.level >= 3
-				and #state.equippedWeapons < Constants.MAX_EQUIPPED_WEAPONS
-				and not table.find(state.equippedWeapons, "PhantomBow")
+			return canUnlockWeapon(state, "PhantomBow")
 		end,
 	},
 	{
@@ -1038,9 +1047,7 @@ local DEFINITIONS: { Definition } = {
 			PS.unlockWeaponInRun(state, "HexlockPistols", false)
 		end,
 		requires = function(state)
-			return state.level >= 3
-				and #state.equippedWeapons < Constants.MAX_EQUIPPED_WEAPONS
-				and not table.find(state.equippedWeapons, "HexlockPistols")
+			return canUnlockWeapon(state, "HexlockPistols")
 		end,
 	},
 	{
@@ -1059,9 +1066,7 @@ local DEFINITIONS: { Definition } = {
 			PS.unlockWeaponInRun(state, "StormcallerTome", false)
 		end,
 		requires = function(state)
-			return state.level >= 3
-				and #state.equippedWeapons < Constants.MAX_EQUIPPED_WEAPONS
-				and not table.find(state.equippedWeapons, "StormcallerTome")
+			return canUnlockWeapon(state, "StormcallerTome")
 		end,
 	},
 	{
@@ -1080,9 +1085,7 @@ local DEFINITIONS: { Definition } = {
 			PS.unlockWeaponInRun(state, "CryptCleaver", false)
 		end,
 		requires = function(state)
-			return state.level >= 3
-				and #state.equippedWeapons < Constants.MAX_EQUIPPED_WEAPONS
-				and not table.find(state.equippedWeapons, "CryptCleaver")
+			return canUnlockWeapon(state, "CryptCleaver")
 		end,
 	},
 	{
@@ -1101,9 +1104,7 @@ local DEFINITIONS: { Definition } = {
 			PS.unlockWeaponInRun(state, "ArcanistStaff", false)
 		end,
 		requires = function(state)
-			return state.level >= 3
-				and #state.equippedWeapons < Constants.MAX_EQUIPPED_WEAPONS
-				and not table.find(state.equippedWeapons, "ArcanistStaff")
+			return canUnlockWeapon(state, "ArcanistStaff")
 		end,
 	},
 	{
@@ -1122,14 +1123,12 @@ local DEFINITIONS: { Definition } = {
 			PS.unlockWeaponInRun(state, "SoulflameLantern", false)
 		end,
 		requires = function(state)
-			return state.level >= 3
-				and #state.equippedWeapons < Constants.MAX_EQUIPPED_WEAPONS
-				and not table.find(state.equippedWeapons, "SoulflameLantern")
+			return canUnlockWeapon(state, "SoulflameLantern")
 		end,
 	},
 
 	-- =========================================================================
-	-- 9. CAPSTONE WEAPON EVOLUTIONS (Unlocked at Rank 2+ Primary Attack)
+	-- 9. CAPSTONE WEAPON EVOLUTIONS (Unlocked at Lv.7+ & Rank 3+ Primary Attack)
 	-- =========================================================================
 	{
 		id = "evolve_staff",
@@ -1138,7 +1137,7 @@ local DEFINITIONS: { Definition } = {
 		icon = "🌟",
 		flavor = "The scepter awakens, raining cosmic lances without end.",
 		maxLevel = 1,
-		values = { 0.45, 0.55, 0.70, 0.90 },
+		values = { 0.40, 0.55, 0.70, 0.85 },
 		describe = function(value)
 			return "EVOLUTION: +2 Bolts, +2 Pierce, and +" .. percent(value) .. " Damage"
 		end,
@@ -1148,7 +1147,7 @@ local DEFINITIONS: { Definition } = {
 			state.damageMultiplier += value
 		end,
 		requires = function(state)
-			return (state.upgrades["bolt_damage"] or 0) >= 2
+			return state.level >= 7 and (state.upgrades["bolt_damage"] or 0) >= 3
 		end,
 	},
 	{
@@ -1158,7 +1157,7 @@ local DEFINITIONS: { Definition } = {
 		icon = "🩸",
 		flavor = "A blood-soaked crescent that reaps an entire hemisphere.",
 		maxLevel = 1,
-		values = { 0.50, 0.65, 0.80, 1.0 },
+		values = { 0.45, 0.60, 0.75, 0.90 },
 		describe = function(value)
 			return "EVOLUTION: +55° Frontal Cone, +" .. percent(value) .. " Cleave DMG & +10% Lifesteal"
 		end,
@@ -1169,7 +1168,7 @@ local DEFINITIONS: { Definition } = {
 			state.lifestealChance += 0.10
 		end,
 		requires = function(state)
-			return (state.upgrades["cleave_damage"] or 0) >= 2
+			return state.level >= 7 and (state.upgrades["cleave_damage"] or 0) >= 3
 		end,
 	},
 	{
@@ -1179,7 +1178,7 @@ local DEFINITIONS: { Definition } = {
 		icon = "🔥",
 		flavor = "The censer overflows with undying purgatory fire.",
 		maxLevel = 1,
-		values = { 0.45, 0.60, 0.75, 0.95 },
+		values = { 0.40, 0.55, 0.70, 0.85 },
 		describe = function(value)
 			return "EVOLUTION: +2 Cinder Clusters, +40% Pool Area & +" .. percent(value) .. " Burn DMG"
 		end,
@@ -1189,7 +1188,7 @@ local DEFINITIONS: { Definition } = {
 			state.cinderDamageMultiplier += value
 		end,
 		requires = function(state)
-			return (state.upgrades["cinder_damage"] or 0) >= 2
+			return state.level >= 7 and (state.upgrades["cinder_damage"] or 0) >= 3
 		end,
 	},
 	{
@@ -1199,7 +1198,7 @@ local DEFINITIONS: { Definition } = {
 		icon = "🏹",
 		flavor = "Blot out the moon with a hurricane of spectral shafts.",
 		maxLevel = 1,
-		values = { 0.45, 0.60, 0.75, 0.95 },
+		values = { 0.40, 0.55, 0.70, 0.85 },
 		describe = function(value)
 			return "EVOLUTION: +2 Arrows, +2 Pierce, +15% Crit & +" .. percent(value) .. " Bow DMG"
 		end,
@@ -1210,7 +1209,7 @@ local DEFINITIONS: { Definition } = {
 			state.bowDamageMultiplier += value
 		end,
 		requires = function(state)
-			return (state.upgrades["bow_damage"] or 0) >= 2
+			return state.level >= 7 and (state.upgrades["bow_damage"] or 0) >= 3
 		end,
 	},
 	{
@@ -1220,7 +1219,7 @@ local DEFINITIONS: { Definition } = {
 		icon = "🔫",
 		flavor = "No chamber ever empties; every bullet finds a heart.",
 		maxLevel = 1,
-		values = { 0.45, 0.60, 0.75, 0.95 },
+		values = { 0.40, 0.55, 0.70, 0.85 },
 		describe = function(value)
 			return "EVOLUTION: +2 Silver Bullets, +50% Crit DMG & +" .. percent(value) .. " Pistol DMG"
 		end,
@@ -1231,7 +1230,7 @@ local DEFINITIONS: { Definition } = {
 			state.pistolDamageMultiplier += value
 		end,
 		requires = function(state)
-			return (state.upgrades["pistol_damage"] or 0) >= 2
+			return state.level >= 7 and (state.upgrades["pistol_damage"] or 0) >= 3
 		end,
 	},
 	{
@@ -1241,7 +1240,7 @@ local DEFINITIONS: { Definition } = {
 		icon = "⚡",
 		flavor = "The heavens split open, chaining living lightning across the crypts.",
 		maxLevel = 1,
-		values = { 0.45, 0.60, 0.75, 0.95 },
+		values = { 0.40, 0.55, 0.70, 0.85 },
 		describe = function(value)
 			return "EVOLUTION: +3 Lightning Bounces, -20% Cooldown & +" .. percent(value) .. " Storm DMG"
 		end,
@@ -1252,7 +1251,23 @@ local DEFINITIONS: { Definition } = {
 			state.stormDamageMultiplier += value
 		end,
 		requires = function(state)
-			return (state.upgrades["storm_damage"] or 0) >= 2
+			return state.level >= 7 and (state.upgrades["storm_damage"] or 0) >= 3
+		end,
+	},
+	{
+		id = "runic_tenacity",
+		tree = "Universal",
+		name = "Runic Tenacity",
+		icon = "⛓️",
+		flavor = "Neither frost, web, nor siren song can bind a resolved soul.",
+		maxLevel = 3,
+		values = { 0.25, 0.38, 0.50, 0.65 },
+		describe = function(value, tier)
+			return string.format("-%s Snare/Freeze/Charm/Confuse duration & +%d Armor", percent(value), tier)
+		end,
+		apply = function(state, value, tier)
+			state.tenacityMult = math.max(0.25, state.tenacityMult * (1 - value))
+			state.armor += tier
 		end,
 	},
 	{
