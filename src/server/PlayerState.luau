@@ -271,19 +271,26 @@ local function teleportCharacter(state: State, targetFloorPos: Vector3, lookDir:
 	state.moveBudget = MOVE_BURST_STUDS
 	state.moveCheckedAt = now
 	state.moveGraceUntil = now + MOVE_SPAWN_GRACE
+	if root then
+		root.Anchored = anchorRoot
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
+		if not anchorRoot then
+			pcall(root.SetNetworkOwner, root, nil)
+		end
+		root.CFrame = targetCf
+	end
 	if state.character then
 		pcall(function()
 			state.character:PivotTo(targetCf)
 		end)
 	end
-	if root then
-		root.Anchored = anchorRoot
-		root.AssemblyLinearVelocity = Vector3.zero
-		root.AssemblyAngularVelocity = Vector3.zero
-		root.CFrame = targetCf
-		if not anchorRoot then
-			pcall(root.SetNetworkOwner, root, state.player)
-		end
+	if root and not anchorRoot then
+		task.delay(0.15, function()
+			if states[state.player] == state and root.Parent and not root.Anchored then
+				pcall(root.SetNetworkOwner, root, state.player)
+			end
+		end)
 	end
 end
 
@@ -998,7 +1005,10 @@ local function buildTargets(): { Target }
 				-- Safety guard: if character is still inside the Sanctuary Chapel region (Z < -242 or Y > 11),
 				-- re-teleport them to Arena Spawn and do not spawn/fight with a phantom target until they arrive in the Graveyard!
 				if position.Z < -(limit + 2) or position.Y > 11 then
-					teleportCharacter(state, Constants.ARENA_SPAWN, Vector3.new(0, 0, -1), frozen)
+					if now - state.lastRubberBandAt >= 0.25 then
+						state.lastRubberBandAt = now
+						teleportCharacter(state, Constants.ARENA_SPAWN, Vector3.new(0, 0, -1), frozen)
+					end
 					continue
 				end
 				local prev = state.lastValidPosition
