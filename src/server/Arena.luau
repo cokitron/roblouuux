@@ -1304,10 +1304,10 @@ local function spawnBrazierShrine(id: number, districtName: string, x: number, z
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "ShrineBillboard"
-	bb.Size = UDim2.fromOffset(220, 54)
-	bb.StudsOffset = Vector3.new(0, 5.2, 0)
+	bb.Size = UDim2.fromOffset(165, 36)
+	bb.StudsOffset = Vector3.new(0, 4.8, 0)
 	bb.AlwaysOnTop = false
-	bb.MaxDistance = 95
+	bb.MaxDistance = 48
 	bb.Parent = flame
 
 	local lbl = Instance.new("TextLabel")
@@ -1318,9 +1318,9 @@ local function spawnBrazierShrine(id: number, districtName: string, x: number, z
 	lbl.TextColor3 = Color3.fromRGB(130, 255, 235)
 	lbl.TextStrokeColor3 = Color3.fromRGB(10, 16, 24)
 	lbl.TextStrokeTransparency = 0.15
-	lbl.TextSize = 16
+	lbl.TextSize = 12
 	lbl.Text = string.format(
-		"🔥 %s Shrine\n<font size='13' color='#ffd878'>Stand in Circle (+15 Souls & Buff)</font>",
+		"🔥 %s Shrine\n<font size='10' color='#ffd878'>Stand in Circle (+15 Souls & Buff)</font>",
 		districtName
 	)
 	lbl.Parent = bb
@@ -1861,10 +1861,10 @@ function Arena.spawnReliquaryChest(x: number, z: number, isBoss: boolean)
 	light.Parent = seam
 
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(220, 48)
-	bb.StudsOffset = Vector3.new(0, 4.5, 0)
-	bb.AlwaysOnTop = true
-	bb.MaxDistance = 150
+	bb.Size = UDim2.fromOffset(165, 34)
+	bb.StudsOffset = Vector3.new(0, 4.0, 0)
+	bb.AlwaysOnTop = false
+	bb.MaxDistance = 48
 	bb.Parent = seam
 
 	local lbl = Instance.new("TextLabel")
@@ -1872,13 +1872,13 @@ function Arena.spawnReliquaryChest(x: number, z: number, isBoss: boolean)
 	lbl.BackgroundTransparency = 1
 	lbl.Font = Enum.Font.GothamBlack
 	lbl.RichText = true
-	lbl.TextSize = 14
+	lbl.TextSize = 11
 	lbl.TextColor3 = Color3.fromRGB(255, 240, 120)
 	lbl.TextStrokeColor3 = Color3.fromRGB(8, 5, 18)
 	lbl.TextStrokeTransparency = 0.08
 	lbl.Text = if isBoss
-		then "👑 BOSS RELIQUARY CHEST!\n<font size='12' color='#a8ffeb'>Walk Over to Claim (+Souls, Coin & XP!)</font>"
-		else "🎁 CRYPT RELIQUARY CACHE\n<font size='12' color='#a8ffeb'>Walk Over to Open (+Souls, Heal & XP!)</font>"
+		then "👑 BOSS RELIQUARY CHEST!\n<font size='9' color='#a8ffeb'>Walk Over to Claim (+Souls, Coin & XP!)</font>"
+		else "🎁 CRYPT RELIQUARY CACHE\n<font size='9' color='#a8ffeb'>Walk Over to Open (+Souls, Heal & XP!)</font>"
 	lbl.Parent = bb
 
 	model.Parent = decor
@@ -1913,7 +1913,7 @@ function Arena.stepShrines(
 				if shrine.label then
 					local pct = math.floor((shrine.progress / Constants.SHRINE_CAPTURE_SECONDS) * 100)
 					shrine.label.Text = string.format(
-						"🔥 %s Shrine (%d%%)\n<font size='13' color='#55ff99'>Channeling Soul Blessing...</font>",
+						"🔥 %s Shrine (%d%%)\n<font size='10' color='#55ff99'>Channeling Soul Blessing...</font>",
 						shrine.name,
 						pct
 					)
@@ -1935,7 +1935,7 @@ function Arena.stepShrines(
 					if shrine.label then
 						shrine.label.TextColor3 = Color3.fromRGB(255, 220, 110)
 						shrine.label.Text = string.format(
-							"✨ %s Ignited!\n<font size='13' color='#a5ffeb'>+15 Souls & Sanctuary Blessing Active</font>",
+							"✨ %s Ignited!\n<font size='10' color='#a5ffeb'>+15 Souls & Sanctuary Blessing Active</font>",
 							shrine.name
 						)
 					end
@@ -1945,7 +1945,7 @@ function Arena.stepShrines(
 				shrine.progress = math.max(0, shrine.progress - dt * 0.5)
 				if shrine.label then
 					shrine.label.Text = string.format(
-						"🔥 %s Shrine\n<font size='13' color='#ffd878'>Stand in Circle (+15 Souls & Buff)</font>",
+						"🔥 %s Shrine\n<font size='10' color='#ffd878'>Stand in Circle (+15 Souls & Buff)</font>",
 						shrine.name
 					)
 				end
@@ -2577,10 +2577,10 @@ function Arena.build()
 
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "PortalBillboard"
-		bb.Size = UDim2.fromOffset(330, 76)
-		bb.StudsOffset = Vector3.new(0, 8.5, 0)
-		bb.AlwaysOnTop = true
-		bb.MaxDistance = 120
+		bb.Size = UDim2.fromOffset(185, 40)
+		bb.StudsOffset = Vector3.new(0, 6.2, 0)
+		bb.AlwaysOnTop = false
+		bb.MaxDistance = 42
 		bb.Parent = vortex
 
 		local titleLabel = Instance.new("TextLabel")
@@ -2591,9 +2591,9 @@ function Arena.build()
 		titleLabel.TextColor3 = Color3.fromRGB(165, 255, 235)
 		titleLabel.TextStrokeColor3 = Color3.fromRGB(10, 18, 22)
 		titleLabel.TextStrokeTransparency = 0.15
-		titleLabel.TextSize = 20
+		titleLabel.TextSize = 13
 		titleLabel.Text =
-			'<b>⚔️ SOLO INSTANT PORTAL</b>\n<font size="14" color="#ffd878">Walk In for 0s Instant Drop-In</font>'
+			'<b>⚔️ SOLO INSTANT PORTAL</b>\n<font size="10" color="#ffd878">Walk In for 0s Instant Drop-In</font>'
 		titleLabel.Parent = bb
 
 		-- =====================================================================
@@ -2622,10 +2622,10 @@ function Arena.build()
 		})
 		local coopBb = Instance.new("BillboardGui")
 		coopBb.Name = "CoopPortalBillboard"
-		coopBb.Size = UDim2.fromOffset(320, 74)
-		coopBb.StudsOffset = Vector3.new(0, 6.2, 0)
-		coopBb.AlwaysOnTop = true
-		coopBb.MaxDistance = 110
+		coopBb.Size = UDim2.fromOffset(185, 40)
+		coopBb.StudsOffset = Vector3.new(0, 5.2, 0)
+		coopBb.AlwaysOnTop = false
+		coopBb.MaxDistance = 38
 		coopBb.Parent = coopRing
 
 		local coopLbl = Instance.new("TextLabel")
@@ -2636,9 +2636,9 @@ function Arena.build()
 		coopLbl.TextColor3 = Color3.fromRGB(255, 230, 120)
 		coopLbl.TextStrokeColor3 = Color3.fromRGB(8, 12, 18)
 		coopLbl.TextStrokeTransparency = 0.12
-		coopLbl.TextSize = 15
+		coopLbl.TextSize = 11
 		coopLbl.Text =
-			"🤝 CO-OP SQUAD RING (0/4)\n<font size='12' color='#9effd8'>Step In to Queue • +15% Souls & +15 Starting Ward!</font>"
+			"🤝 CO-OP SQUAD RING (0/4)\n<font size='9' color='#9effd8'>Step In to Queue • +15% Souls & +15 Ward!</font>"
 		coopLbl.Parent = coopBb
 		coopPortalLabel = coopLbl
 		local _ = coopBeacon
@@ -2676,10 +2676,10 @@ function Arena.build()
 		spawnPrefabAtY("Relic_SoulCrystal", fontPos.X, ly + 2.8, fontPos.Z, 0, 1.05, 0, 0, lobby)
 
 		local fontBb = Instance.new("BillboardGui")
-		fontBb.Size = UDim2.fromOffset(290, 62)
-		fontBb.StudsOffset = Vector3.new(0, 6.4, 0)
-		fontBb.AlwaysOnTop = true
-		fontBb.MaxDistance = 95
+		fontBb.Size = UDim2.fromOffset(175, 38)
+		fontBb.StudsOffset = Vector3.new(0, 5.2, 0)
+		fontBb.AlwaysOnTop = false
+		fontBb.MaxDistance = 36
 		fontBb.Parent = fontBasin
 
 		local fontLbl = Instance.new("TextLabel")
@@ -2690,9 +2690,9 @@ function Arena.build()
 		fontLbl.TextColor3 = Color3.fromRGB(130, 255, 235)
 		fontLbl.TextStrokeColor3 = Color3.fromRGB(8, 12, 18)
 		fontLbl.TextStrokeTransparency = 0.1
-		fontLbl.TextSize = 15
+		fontLbl.TextSize = 11
 		fontLbl.Text =
-			"✨ SANCTUARY SOUL FONT\n<font size='12' color='#ffe898'>Press [E] for Free Run Blessing (+20 Ward & +10% Speed)</font>"
+			"✨ SANCTUARY SOUL FONT\n<font size='9' color='#ffe898'>Press [E] for Free Run Blessing (+20 Ward & +10% Speed)</font>"
 		fontLbl.Parent = fontBb
 
 		local fontPrompt = Instance.new("ProximityPrompt")
@@ -2783,10 +2783,10 @@ function Arena.build()
 			spawnPrefabAtY(wp.prefab, px, ly + 3.3, wp.z, math.pi * 0.5, 1.05, 0, 0, lobby)
 
 			local wBb = Instance.new("BillboardGui")
-			wBb.Size = UDim2.fromOffset(230, 52)
-			wBb.StudsOffset = Vector3.new(0, 4.8, 0)
+			wBb.Size = UDim2.fromOffset(165, 36)
+			wBb.StudsOffset = Vector3.new(0, 4.2, 0)
 			wBb.AlwaysOnTop = false
-			wBb.MaxDistance = 42
+			wBb.MaxDistance = 30
 			wBb.Parent = ped
 
 			local wLbl = Instance.new("TextLabel")
@@ -2797,8 +2797,8 @@ function Arena.build()
 			wLbl.TextColor3 = wp.color
 			wLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
 			wLbl.TextStrokeTransparency = 0.1
-			wLbl.TextSize = 13
-			wLbl.Text = string.format("%s\n<font size='11' color='#e2e8f0'>%s</font>", wp.title, wp.subtitle)
+			wLbl.TextSize = 11
+			wLbl.Text = string.format("%s\n<font size='9' color='#e2e8f0'>%s</font>", wp.title, wp.subtitle)
 			wLbl.Parent = wBb
 
 			local prompt = Instance.new("ProximityPrompt")
@@ -2888,10 +2888,10 @@ function Arena.build()
 			})
 
 			local dBb = Instance.new("BillboardGui")
-			dBb.Size = UDim2.fromOffset(200, 36)
-			dBb.StudsOffset = Vector3.new(0, 3.6, 0)
+			dBb.Size = UDim2.fromOffset(150, 26)
+			dBb.StudsOffset = Vector3.new(0, 3.4, 0)
 			dBb.AlwaysOnTop = false
-			dBb.MaxDistance = 42
+			dBb.MaxDistance = 30
 			dBb.Parent = torso
 
 			local dLbl = Instance.new("TextLabel")
@@ -2901,17 +2901,17 @@ function Arena.build()
 			dLbl.TextColor3 = dm.color
 			dLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
 			dLbl.TextStrokeTransparency = 0.1
-			dLbl.TextSize = 13
+			dLbl.TextSize = 10
 			dLbl.Text = dm.name
 			dLbl.Parent = dBb
 
 			if dm.id == 2 then
 				local dpsBb = Instance.new("BillboardGui")
 				dpsBb.Name = "SanctuaryDpsBillboard"
-				dpsBb.Size = UDim2.fromOffset(340, 74)
-				dpsBb.StudsOffset = Vector3.new(0, 6.8, 0)
+				dpsBb.Size = UDim2.fromOffset(220, 46)
+				dpsBb.StudsOffset = Vector3.new(0, 6.2, 0)
 				dpsBb.AlwaysOnTop = false
-				dpsBb.MaxDistance = 55
+				dpsBb.MaxDistance = 36
 				dpsBb.Parent = torso
 
 				local dpsLbl = Instance.new("TextLabel")
@@ -2922,9 +2922,9 @@ function Arena.build()
 				dpsLbl.TextColor3 = Color3.fromRGB(255, 225, 110)
 				dpsLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
 				dpsLbl.TextStrokeTransparency = 0.08
-				dpsLbl.TextSize = 15
+				dpsLbl.TextSize = 11
 				dpsLbl.Text =
-					"⚔️ CHAPEL TRAINING YARD — LIVE DPS\n<font size='12' color='#9effd8'>Stand Nearby to Auto-Attack • Press [Space] to Dash!</font>"
+					"⚔️ CHAPEL TRAINING YARD — LIVE DPS\n<font size='9' color='#9effd8'>Stand Nearby to Auto-Attack • Press [Space] to Dash!</font>"
 				dpsLbl.Parent = dpsBb
 				dpsMeterLabel = dpsLbl
 			end
@@ -2985,10 +2985,10 @@ function Arena.build()
 				parent = lobby,
 			})
 			local sBb = Instance.new("BillboardGui")
-			sBb.Size = UDim2.fromOffset(260, 56)
-			sBb.StudsOffset = Vector3.new(0, 4.4, 0)
+			sBb.Size = UDim2.fromOffset(185, 38)
+			sBb.StudsOffset = Vector3.new(0, 4.0, 0)
 			sBb.AlwaysOnTop = false
-			sBb.MaxDistance = 52
+			sBb.MaxDistance = 36
 			sBb.Parent = ring
 
 			local sLbl = Instance.new("TextLabel")
@@ -2999,8 +2999,8 @@ function Arena.build()
 			sLbl.TextColor3 = st.color
 			sLbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
 			sLbl.TextStrokeTransparency = 0.1
-			sLbl.TextSize = 13
-			sLbl.Text = string.format("%s\n<font size='11' color='#e2e8f0'>%s</font>", st.title, st.subtitle)
+			sLbl.TextSize = 11
+			sLbl.Text = string.format("%s\n<font size='9' color='#e2e8f0'>%s</font>", st.title, st.subtitle)
 			sLbl.Parent = sBb
 
 			local sPrompt = Instance.new("ProximityPrompt")
@@ -3037,10 +3037,10 @@ function Arena.build()
 				parent = lobby,
 			})
 			local hBb = Instance.new("BillboardGui")
-			hBb.Size = UDim2.fromOffset(230, 110)
-			hBb.StudsOffset = Vector3.new(0, 1.2, 0)
+			hBb.Size = UDim2.fromOffset(175, 84)
+			hBb.StudsOffset = Vector3.new(0, 1.0, 0)
 			hBb.AlwaysOnTop = false
-			hBb.MaxDistance = 52
+			hBb.MaxDistance = 36
 			hBb.Parent = stele
 
 			local hLbl = Instance.new("TextLabel")
@@ -3052,7 +3052,7 @@ function Arena.build()
 			hLbl.TextColor3 = Color3.fromRGB(255, 225, 130)
 			hLbl.TextStrokeColor3 = Color3.fromRGB(6, 8, 12)
 			hLbl.TextStrokeTransparency = 0.15
-			hLbl.TextSize = 12
+			hLbl.TextSize = 10
 			hLbl.Parent = hBb
 			local corner = Instance.new("UICorner")
 			corner.CornerRadius = UDim.new(0, 6)
@@ -3099,7 +3099,7 @@ function Arena.recordDummyHit(damage: number, isCrit: boolean)
 	if dpsMeterLabel then
 		local critTag = if isCrit then " <font color='#ff6888'>(CRIT!)</font>" else ""
 		dpsMeterLabel.Text = string.format(
-			"⚔️ CHAPEL TRAINING YARD — LIVE DPS: <font color='#55ffaa'>%d/s</font>\n<font size='12' color='#ffe898'>Last Hit: %d%s • Total Damage: %d</font>",
+			"⚔️ CHAPEL TRAINING YARD — LIVE DPS: <font color='#55ffaa'>%d/s</font>\n<font size='9' color='#ffe898'>Last Hit: %d%s • Total Damage: %d</font>",
 			dps,
 			math.floor(damage + 0.5),
 			critTag,
@@ -3114,13 +3114,13 @@ function Arena.updateCoopPortalBillboard(queuedCount: number, remainingSec: numb
 	end
 	if queuedCount > 0 and remainingSec ~= nil then
 		coopPortalLabel.Text = string.format(
-			"🤝 CO-OP SQUAD DEPLOYING (%d/4) — %.1fs!\n<font size='12' color='#55ffaa'>+15%% Co-Op Souls & +15 Starting Ward Active!</font>",
+			"🤝 CO-OP SQUAD DEPLOYING (%d/4) — %.1fs!\n<font size='9' color='#55ffaa'>+15%% Co-Op Souls & +15 Starting Ward Active!</font>",
 			queuedCount,
 			math.max(0, remainingSec)
 		)
 	else
 		coopPortalLabel.Text =
-			"🤝 CO-OP SQUAD RING (0/4)\n<font size='12' color='#9effd8'>Step In to Queue • +15% Souls & +15 Starting Ward!</font>"
+			"🤝 CO-OP SQUAD RING (0/4)\n<font size='9' color='#9effd8'>Step In to Queue • +15% Souls & +15 Ward!</font>"
 	end
 end
 

@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared:WaitForChild("Constants") :: ModuleScript)
@@ -382,54 +383,67 @@ function LevelUpUi.mount(playerGui: PlayerGui)
 	local actionBar = create("Frame", {
 		Name = "ImpulseBar",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.fromScale(0.5, 0.95),
-		Size = UDim2.fromOffset(640, 48),
+		Position = UDim2.fromScale(0.5, 0.96),
+		Size = UDim2.fromOffset(620, 42),
 		BackgroundTransparency = 1,
 	}, picker)
+
+	local actionBarScale = create("UIScale", { Scale = 1 }, actionBar)
+	local function updateActionBarScale()
+		local cam = Workspace.CurrentCamera
+		if cam then
+			local vp = cam.ViewportSize
+			actionBarScale.Scale = math.clamp(math.min((vp.X - 24) / 640, vp.Y / 520), 0.56, 1.0)
+		end
+	end
+	updateActionBarScale()
+	if Workspace.CurrentCamera then
+		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateActionBarScale)
+	end
 
 	local rerollBtn = create("TextButton", {
 		Name = "RerollButton",
 		Position = UDim2.fromOffset(0, 0),
-		Size = UDim2.fromOffset(305, 48),
+		Size = UDim2.fromOffset(298, 42),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BorderSizePixel = 0,
 		AutoButtonColor = true,
 		RichText = true,
 		Font = Enum.Font.GothamBlack,
-		TextSize = 14,
+		TextSize = 13,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		TextStrokeColor3 = STROKE_DARK,
 		TextStrokeTransparency = 0.08,
 		Text = "🎲 BONUS ROLL [R] (Guaranteed Rare+)",
 	}, actionBar)
-	create("UICorner", { CornerRadius = UDim.new(0, 12) }, rerollBtn)
+	create("UICorner", { CornerRadius = UDim.new(0, 10) }, rerollBtn)
 	create("UIGradient", {
 		Color = ColorSequence.new(Color3.fromRGB(16, 78, 155), Color3.fromRGB(28, 34, 108)),
 		Rotation = 90,
 	}, rerollBtn)
-	create("UIStroke", { Color = Color3.fromRGB(95, 235, 255), Thickness = 2 }, rerollBtn)
+	create("UIStroke", { Color = Color3.fromRGB(95, 235, 255), Thickness = 1.8 }, rerollBtn)
 
 	local claimAllBtn = create("TextButton", {
 		Name = "ClaimAllButton",
-		Position = UDim2.fromOffset(325, 0),
-		Size = UDim2.fromOffset(315, 48),
+		Position = UDim2.fromOffset(312, 0),
+		Size = UDim2.fromOffset(308, 42),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BorderSizePixel = 0,
 		AutoButtonColor = true,
 		RichText = true,
 		Font = Enum.Font.GothamBlack,
-		TextSize = 14,
+		TextSize = 13,
 		TextColor3 = Color3.fromRGB(255, 252, 240),
 		TextStrokeColor3 = STROKE_DARK,
 		TextStrokeTransparency = 0.08,
 		Text = "👑 MIRACLE ROLL: CLAIM ALL CARDS!",
 	}, actionBar)
-	create("UICorner", { CornerRadius = UDim.new(0, 12) }, claimAllBtn)
+	create("UICorner", { CornerRadius = UDim.new(0, 10) }, claimAllBtn)
 	create("UIGradient", {
 		Color = ColorSequence.new(Color3.fromRGB(148, 68, 14), Color3.fromRGB(98, 22, 72)),
 		Rotation = 90,
 	}, claimAllBtn)
-	create("UIStroke", { Color = Color3.fromRGB(255, 215, 75), Thickness = 2.2 }, claimAllBtn)
+	create("UIStroke", { Color = Color3.fromRGB(255, 215, 75), Thickness = 2 }, claimAllBtn)
 
 	local waiting = createText(gui, {
 		Name = "Waiting",

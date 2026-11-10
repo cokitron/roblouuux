@@ -110,6 +110,22 @@ local function formatGearStats(item: GearItem): string
 	return table.concat(parts, " • ")
 end
 
+local function attachResponsiveScale(target: GuiObject, designW: number, designH: number, minScale: number?)
+	local uiScale = create("UIScale", { Scale = 1 }, target)
+	local floorScale = minScale or 0.44
+	local function update()
+		local cam = Workspace.CurrentCamera
+		if cam then
+			local vp = cam.ViewportSize
+			uiScale.Scale = math.clamp(math.min((vp.X - 20) / designW, (vp.Y - 18) / designH), floorScale, 1.0)
+		end
+	end
+	update()
+	if Workspace.CurrentCamera then
+		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(update)
+	end
+end
+
 local function buildModalShell(gui: ScreenGui, name: string, titleText: string, subtitleText: string): (Frame, Frame)
 	local overlay = create("Frame", {
 		Name = name,
@@ -128,6 +144,7 @@ local function buildModalShell(gui: ScreenGui, name: string, titleText: string, 
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BorderSizePixel = 0,
 	}, overlay)
+	attachResponsiveScale(card, 920, 540, 0.44)
 	create("UICorner", { CornerRadius = UDim.new(0, 16) }, card)
 	addGradient(card, Color3.fromRGB(48, 28, 98), Color3.fromRGB(22, 16, 48), 90)
 	create("UIStroke", { Color = BORDER_GOLD, Thickness = 2.5 }, card)
@@ -189,53 +206,41 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		DisplayOrder = 15,
 	}, playerGui)
 
-	local uiScale = create("UIScale", { Scale = 1 }, gui)
-	local function updateUiScale()
-		local cam = Workspace.CurrentCamera
-		if cam then
-			local vp = cam.ViewportSize
-			uiScale.Scale = math.clamp(math.min(vp.X / 1060, vp.Y / 620), 0.55, 1.0)
-		end
-	end
-	updateUiScale()
-	if Workspace.CurrentCamera then
-		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUiScale)
-	end
-
 	-- =========================================================================
 	-- FLOATING WOW LOOT TOAST BANNER (Shows on Boss Kill / Vault Claim)
 	-- =========================================================================
 	local lootToast = create("Frame", {
 		Name = "LootToast",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 126),
-		Size = UDim2.fromOffset(420, 66),
+		Position = UDim2.new(0.5, 0, 0, 108),
+		Size = UDim2.fromOffset(390, 58),
 		BackgroundColor3 = BG_DARK,
 		BackgroundTransparency = 0.08,
 		BorderSizePixel = 0,
 		Visible = false,
 		ZIndex = 30,
 	}, gui)
+	attachResponsiveScale(lootToast, 860, 500, 0.65)
 	create("UICorner", { CornerRadius = UDim.new(0, 10) }, lootToast)
 	local lootToastStroke = create("UIStroke", { Color = BORDER_PURPLE, Thickness = 2 }, lootToast)
 	local lootToastTitle = create("TextLabel", {
-		Position = UDim2.fromOffset(14, 8),
-		Size = UDim2.new(1, -28, 0, 22),
+		Position = UDim2.fromOffset(12, 6),
+		Size = UDim2.new(1, -24, 0, 20),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.Merriweather,
-		TextSize = 16,
+		TextSize = 14,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = TEXT_GOLD,
 		Text = "🎁 LOOT ACQUIRED!",
 		ZIndex = 31,
 	}, lootToast)
 	local lootToastBody = create("TextLabel", {
-		Position = UDim2.fromOffset(14, 30),
-		Size = UDim2.new(1, -28, 0, 28),
+		Position = UDim2.fromOffset(12, 26),
+		Size = UDim2.new(1, -24, 0, 24),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamBold,
 		RichText = true,
-		TextSize = 13,
+		TextSize = 12,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = TEXT_WHITE,
 		Text = "",
@@ -274,48 +279,52 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		Visible = false,
 	}, gui)
 
-	-- Hero Character & Rested XP Card (Top-Left)
+	-- Hero Character & Rested XP Card (Top-Left, clears Roblox TopBar)
 	local walletCard = create("Frame", {
 		Name = "SanctuaryHeader",
-		Position = UDim2.fromOffset(16, 14),
-		Size = UDim2.fromOffset(450, 96),
+		AnchorPoint = Vector2.new(0, 0),
+		Position = UDim2.fromOffset(12, 44),
+		Size = UDim2.fromOffset(330, 68),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BorderSizePixel = 0,
 	}, lobbyFrame)
-	create("UICorner", { CornerRadius = UDim.new(0, 14) }, walletCard)
+	attachResponsiveScale(walletCard, 960, 540, 0.58)
+	create("UICorner", { CornerRadius = UDim.new(0, 12) }, walletCard)
 	addGradient(walletCard, Color3.fromRGB(58, 28, 125), Color3.fromRGB(22, 48, 115), 25)
-	create("UIStroke", { Color = BORDER_CYAN, Thickness = 2.2 }, walletCard)
+	create("UIStroke", { Color = BORDER_CYAN, Thickness = 2 }, walletCard)
 
 	local heroHeaderLabel = create("TextLabel", {
-		Position = UDim2.fromOffset(14, 6),
-		Size = UDim2.new(1, -28, 0, 24),
+		Position = UDim2.fromOffset(10, 4),
+		Size = UDim2.new(1, -20, 0, 18),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.Merriweather,
-		TextSize = 18,
+		TextSize = 13,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = TEXT_GOLD,
 		Text = "🏛️ Lv. 1 Initiate of the Sanctuary  •  iLvl 2",
 	}, walletCard)
 
 	local lobbyStatsLabel = create("TextLabel", {
-		Position = UDim2.fromOffset(14, 30),
-		Size = UDim2.new(1, -28, 0, 22),
+		Position = UDim2.fromOffset(10, 22),
+		Size = UDim2.new(1, -20, 0, 18),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamBold,
 		RichText = true,
-		TextSize = 13,
+		TextSize = 11,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = TEXT_WHITE,
 		Text = "🔮 Souls: 60  •  ✨ Dust: 10  •  🎲 Coins: 2  •  ⚜️ Neutral",
 	}, walletCard)
 
 	local heroXpBack = create("Frame", {
-		Position = UDim2.fromOffset(14, 58),
-		Size = UDim2.new(1, -28, 0, 26),
+		Position = UDim2.fromOffset(10, 43),
+		Size = UDim2.new(1, -20, 0, 19),
 		BackgroundColor3 = BG_SLOT,
 		BorderSizePixel = 0,
 	}, walletCard)
-	create("UICorner", { CornerRadius = UDim.new(0, 8) }, heroXpBack)
+	create("UICorner", { CornerRadius = UDim.new(0, 6) }, heroXpBack)
 	create("UIStroke", { Color = BORDER_GOLD, Thickness = 1.2, Transparency = 0.25 }, heroXpBack)
 
 	local heroXpFill = create("Frame", {
@@ -323,28 +332,31 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		BackgroundColor3 = WOW_RESTED_BLUE,
 		BorderSizePixel = 0,
 	}, heroXpBack)
-	create("UICorner", { CornerRadius = UDim.new(0, 8) }, heroXpFill)
+	create("UICorner", { CornerRadius = UDim.new(0, 6) }, heroXpFill)
 
 	local heroXpText = create("TextLabel", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamBlack,
-		TextSize = 12,
+		TextSize = 10,
 		TextColor3 = TEXT_WHITE,
 		ZIndex = 2,
 		Text = "Hero XP: 0 / 66 (🟦 RESTED: 200% XP!)",
 	}, heroXpBack)
 
-	-- Top Navigation Row Buttons (Weapon Arsenal, Armory [C], Talents [N], Mythic+/Vault [J], Treasury [M])
+	-- Top-Right Navigation Row Buttons (Weapons, Armory, Talents, Mythic+, Treasury, Codex/Guide)
 	local navRow = create("Frame", {
 		Name = "NavRow",
-		Position = UDim2.fromOffset(478, 14),
-		Size = UDim2.new(1, -494, 0, 96),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -12, 0, 44),
+		Size = UDim2.fromOffset(588, 68),
 		BackgroundTransparency = 1,
 	}, lobbyFrame)
+	attachResponsiveScale(navRow, 960, 540, 0.58)
 	create("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
-		Padding = UDim.new(0, 10),
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		Padding = UDim.new(0, 6),
 	}, navRow)
 
 	local function makeNavButton(
@@ -355,22 +367,23 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		gradBot: Color3
 	): (TextButton, TextLabel)
 		local btn = create("TextButton", {
-			Size = UDim2.new(0.2, -8, 1, 0),
+			Size = UDim2.fromOffset(93, 68),
 			BackgroundColor3 = Color3.new(1, 1, 1),
 			BorderSizePixel = 0,
 			AutoButtonColor = true,
 			Text = "",
 		}, navRow)
-		create("UICorner", { CornerRadius = UDim.new(0, 14) }, btn)
+		create("UICorner", { CornerRadius = UDim.new(0, 10) }, btn)
 		addGradient(btn, gradTop, gradBot, 90)
-		create("UIStroke", { Color = borderColor, Thickness = 2.2 }, btn)
+		create("UIStroke", { Color = borderColor, Thickness = 1.8 }, btn)
 
 		create("TextLabel", {
-			Position = UDim2.fromOffset(10, 10),
-			Size = UDim2.new(1, -20, 0, 24),
+			Position = UDim2.fromOffset(6, 5),
+			Size = UDim2.new(1, -12, 0, 18),
 			BackgroundTransparency = 1,
 			Font = Enum.Font.GothamBlack,
-			TextSize = 15,
+			TextSize = 11,
+			TextTruncate = Enum.TextTruncate.AtEnd,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextColor3 = Color3.fromRGB(255, 252, 242),
 			TextStrokeColor3 = STROKE_DARK,
@@ -379,12 +392,12 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		}, btn)
 
 		local subLbl = create("TextLabel", {
-			Position = UDim2.fromOffset(10, 38),
-			Size = UDim2.new(1, -20, 0, 48),
+			Position = UDim2.fromOffset(6, 24),
+			Size = UDim2.new(1, -12, 0, 38),
 			BackgroundTransparency = 1,
 			Font = Enum.Font.GothamBold,
 			TextWrapped = true,
-			TextSize = 12,
+			TextSize = 9,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextColor3 = Color3.fromRGB(228, 240, 255),
 			TextStrokeColor3 = STROKE_DARK,
@@ -395,39 +408,46 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 	end
 
 	local arsenalButton, arsenalEquippedLabel = makeNavButton(
-		"🗡️ WEAPONS [G]",
+		"🗡️ WEAPONS",
 		"🔮 Arcanist's Staff\nMastery Rank 1",
 		BORDER_GOLD,
 		Color3.fromRGB(20, 68, 152),
 		Color3.fromRGB(12, 30, 82)
 	)
 	local armoryButton, armorySubLabel = makeNavButton(
-		"🛡️ ARMORY [C]",
+		"🛡️ ARMORY",
 		"6-Slot Gear & Forge\nAvg iLvl 2",
 		Color3.fromRGB(225, 135, 255),
 		Color3.fromRGB(88, 22, 138),
 		Color3.fromRGB(40, 12, 72)
 	)
 	local talentButton, talentSubLabel = makeNavButton(
-		"🌟 TALENTS [N]",
+		"🌟 TALENTS",
 		"Sanctuary Altar Tree\n0 Points Spent",
 		BORDER_GOLD,
 		Color3.fromRGB(145, 76, 14),
 		Color3.fromRGB(74, 30, 10)
 	)
 	local keystoneButton, keystoneSubLabel = makeNavButton(
-		"🗝️ MYTHIC+ [J]",
+		"🗝️ MYTHIC+",
 		"Keystones & Vault\nNormal Crypt",
 		TEXT_GREEN,
 		Color3.fromRGB(14, 105, 66),
 		Color3.fromRGB(10, 46, 34)
 	)
 	local shopButton, shopSubLabel = makeNavButton(
-		"👑 TREASURY [M]",
+		"👑 TREASURY",
 		"Heirlooms & Passes\n+10% Party Invite",
 		BORDER_GOLD,
 		Color3.fromRGB(148, 24, 68),
 		Color3.fromRGB(66, 12, 36)
+	)
+	local codexButton, codexSubLabel = makeNavButton(
+		"📖 CODEX",
+		"Bestiary & Guide\n0/24 Unlocked",
+		BORDER_CYAN,
+		Color3.fromRGB(18, 95, 125),
+		Color3.fromRGB(12, 42, 68)
 	)
 
 	-- =========================================================================
@@ -1300,7 +1320,7 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 
 	local grimoireHeaderLabel = create("TextLabel", {
 		Position = UDim2.fromOffset(24, 64),
-		Size = UDim2.new(1, -48, 0, 22),
+		Size = UDim2.new(1, -210, 0, 22),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamBlack,
 		TextSize = 14,
@@ -1308,6 +1328,21 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		TextColor3 = TEXT_CYAN,
 		Text = "📖 Grimoire Discoveries: 0 / 24   •   Permanent Compendium Bonus: +0.0% All DMG & +0 Max HP",
 	}, grimoireCard)
+
+	local switchToGuideBtn = create("TextButton", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -64, 0, 16),
+		Size = UDim2.fromOffset(145, 34),
+		BackgroundColor3 = BTN_PURPLE,
+		BorderSizePixel = 0,
+		AutoButtonColor = true,
+		Font = Enum.Font.GothamBlack,
+		TextSize = 11,
+		TextColor3 = TEXT_WHITE,
+		Text = "📘 FIELD GUIDE [H]",
+	}, grimoireCard)
+	create("UICorner", { CornerRadius = UDim.new(0, 8) }, switchToGuideBtn)
+	create("UIStroke", { Color = BORDER_CYAN, Thickness = 1.4 }, switchToGuideBtn)
 
 	local grimoireScroll = create("ScrollingFrame", {
 		Position = UDim2.fromOffset(20, 92),
@@ -1385,74 +1420,109 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		}
 	end
 
-	-- Compact Sanctuary Quick-Guide Card on Left Side of Lobby
+	-- Compact Sanctuary Quick-Guide Card on Left Side of Lobby (Auto-hidden on touch/compact screens so left thumbstick is unobstructed)
+	local quickGuideDismissed = false
 	local quickGuideCard = create("Frame", {
 		Name = "QuickGuideCard",
-		Position = UDim2.fromOffset(16, 122),
-		Size = UDim2.fromOffset(330, 196),
+		Position = UDim2.fromOffset(12, 120),
+		Size = UDim2.fromOffset(265, 148),
 		BackgroundColor3 = BG_DARK,
-		BackgroundTransparency = 0.08,
+		BackgroundTransparency = 0.14,
 		BorderSizePixel = 0,
+		Visible = false,
 	}, lobbyFrame)
-	create("UICorner", { CornerRadius = UDim.new(0, 12) }, quickGuideCard)
-	create("UIStroke", { Color = BORDER_GOLD, Thickness = 1.8 }, quickGuideCard)
+	create("UICorner", { CornerRadius = UDim.new(0, 10) }, quickGuideCard)
+	create("UIStroke", { Color = BORDER_GOLD, Thickness = 1.5 }, quickGuideCard)
+
+	local function updateQuickGuideVisibility()
+		if quickGuideDismissed or UserInputService.TouchEnabled then
+			quickGuideCard.Visible = false
+			return
+		end
+		local cam = Workspace.CurrentCamera
+		if cam then
+			local vp = cam.ViewportSize
+			quickGuideCard.Visible = (vp.X >= 920 and vp.Y >= 540)
+		end
+	end
+	updateQuickGuideVisibility()
+	if Workspace.CurrentCamera then
+		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateQuickGuideVisibility)
+	end
 
 	create("TextLabel", {
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -24, 0, 22),
+		Position = UDim2.fromOffset(10, 6),
+		Size = UDim2.new(1, -36, 0, 18),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.Merriweather,
-		TextSize = 15,
+		TextSize = 13,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = TEXT_GOLD,
-		Text = "🏛️ SANCTUARY CHAPEL BRIEFING",
+		Text = "🏛️ SANCTUARY BRIEFING",
 	}, quickGuideCard)
 
+	local dismissGuideBtn = create("TextButton", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -6, 0, 5),
+		Size = UDim2.fromOffset(20, 20),
+		BackgroundColor3 = BTN_SLATE,
+		BorderSizePixel = 0,
+		Font = Enum.Font.GothamBlack,
+		TextSize = 11,
+		TextColor3 = TEXT_MUTED,
+		Text = "✕",
+	}, quickGuideCard)
+	create("UICorner", { CornerRadius = UDim.new(0, 5) }, dismissGuideBtn)
+	dismissGuideBtn.Activated:Connect(function()
+		quickGuideDismissed = true
+		quickGuideCard.Visible = false
+	end)
+
 	create("TextLabel", {
-		Position = UDim2.fromOffset(12, 32),
-		Size = UDim2.new(1, -24, 0, 114),
+		Position = UDim2.fromOffset(10, 26),
+		Size = UDim2.new(1, -20, 0, 84),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamMedium,
 		RichText = true,
 		TextWrapped = true,
-		TextSize = 12,
+		TextSize = 10,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		TextColor3 = TEXT_WHITE,
-		Text = "• <b>West Aisle:</b> Walk over <b>6 Weapon Pedestals</b> to equip & preview.\n"
-			.. "• <b>East Combat Yard:</b> Attack <b>3 Target Dummies</b> with live DPS meter!\n"
-			.. "• <b>Central Soul Font:</b> Claim <b>+20 Ward & +10% Speed</b> before deploying.\n"
-			.. "• <b>South Narthex:</b> Step into the <b>Solo</b> or <b>Co-Op (+15% Souls)</b> Portal!",
+		Text = "• <b>West Aisle:</b> Walk over <b>6 Weapon Pedestals</b> to equip.\n"
+			.. "• <b>East Yard:</b> Attack <b>Target Dummies</b> (live DPS).\n"
+			.. "• <b>Center Font:</b> Claim <b>+20 Ward & +10% Speed</b>.\n"
+			.. "• <b>South Portal:</b> Walk into <b>Solo</b> or <b>Co-Op</b> Portal!",
 	}, quickGuideCard)
 
 	local openGuideBtn = create("TextButton", {
-		Position = UDim2.fromOffset(12, 152),
-		Size = UDim2.fromOffset(148, 34),
+		Position = UDim2.fromOffset(10, 114),
+		Size = UDim2.fromOffset(118, 26),
 		BackgroundColor3 = BTN_PURPLE,
 		BorderSizePixel = 0,
 		AutoButtonColor = true,
 		Font = Enum.Font.GothamBlack,
-		TextSize = 12,
+		TextSize = 10,
 		TextColor3 = TEXT_WHITE,
-		Text = "📘 FIELD GUIDE [H]",
+		Text = "📘 GUIDE [H]",
 	}, quickGuideCard)
-	create("UICorner", { CornerRadius = UDim.new(0, 8) }, openGuideBtn)
-	create("UIStroke", { Color = BORDER_CYAN, Thickness = 1.4 }, openGuideBtn)
+	create("UICorner", { CornerRadius = UDim.new(0, 6) }, openGuideBtn)
+	create("UIStroke", { Color = BORDER_CYAN, Thickness = 1.2 }, openGuideBtn)
 
 	local openGrimoireBtn = create("TextButton", {
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 152),
-		Size = UDim2.fromOffset(148, 34),
+		Position = UDim2.new(1, -10, 0, 114),
+		Size = UDim2.fromOffset(118, 26),
 		BackgroundColor3 = BTN_GOLD,
 		BorderSizePixel = 0,
 		AutoButtonColor = true,
 		Font = Enum.Font.GothamBlack,
-		TextSize = 12,
+		TextSize = 10,
 		TextColor3 = TEXT_WHITE,
 		Text = "📖 GRIMOIRE [B]",
 	}, quickGuideCard)
-	create("UICorner", { CornerRadius = UDim.new(0, 8) }, openGrimoireBtn)
-	create("UIStroke", { Color = BORDER_GOLD, Thickness = 1.4 }, openGrimoireBtn)
+	create("UICorner", { CornerRadius = UDim.new(0, 6) }, openGrimoireBtn)
+	create("UIStroke", { Color = BORDER_GOLD, Thickness = 1.2 }, openGrimoireBtn)
 
 	-- Modal Open Wiring
 	local function closeAllModals()
@@ -1470,7 +1540,16 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		closeAllModals()
 		guideOverlay.Visible = nextState
 	end)
+	switchToGuideBtn.Activated:Connect(function()
+		closeAllModals()
+		guideOverlay.Visible = true
+	end)
 	openGrimoireBtn.Activated:Connect(function()
+		local nextState = not grimoireOverlay.Visible
+		closeAllModals()
+		grimoireOverlay.Visible = nextState
+	end)
+	codexButton.Activated:Connect(function()
 		local nextState = not grimoireOverlay.Visible
 		closeAllModals()
 		grimoireOverlay.Visible = nextState
@@ -1571,22 +1650,23 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 	local deployButton = create("TextButton", {
 		Name = "DeployButton",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -24),
-		Size = UDim2.fromOffset(390, 66),
+		Position = UDim2.new(0.5, 0, 1, -12),
+		Size = UDim2.fromOffset(280, 46),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BorderSizePixel = 0,
 		AutoButtonColor = true,
 		RichText = true,
 		Font = Enum.Font.GothamBlack,
-		TextSize = 21,
+		TextSize = 15,
 		TextColor3 = TEXT_WHITE,
 		TextStrokeColor3 = STROKE_DARK,
 		TextStrokeTransparency = 0.05,
-		Text = '⚔️ PLAY! ENTER THE CRYPT! 🔥\n<font size="13" color="#ffe885">Walk into Portal or Click to Battle!</font>',
+		Text = '⚔️ PLAY! ENTER THE CRYPT! 🔥\n<font size="10" color="#ffe885">Walk into Portal or Tap to Battle!</font>',
 	}, lobbyFrame)
-	create("UICorner", { CornerRadius = UDim.new(0, 16) }, deployButton)
+	attachResponsiveScale(deployButton, 900, 520, 0.65)
+	create("UICorner", { CornerRadius = UDim.new(0, 12) }, deployButton)
 	addGradient(deployButton, Color3.fromRGB(16, 152, 86), Color3.fromRGB(10, 88, 64), 90)
-	create("UIStroke", { Color = BORDER_GOLD, Thickness = 2.8 }, deployButton)
+	create("UIStroke", { Color = BORDER_GOLD, Thickness = 2.2 }, deployButton)
 
 	deployButton.Activated:Connect(function()
 		closeAllModals()
@@ -1613,6 +1693,7 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		BackgroundColor3 = BG_CARD,
 		BorderSizePixel = 0,
 	}, downedOverlay)
+	attachResponsiveScale(downedCard, 480, 410, 0.52)
 	create("UICorner", { CornerRadius = UDim.new(0, 14) }, downedCard)
 	create("UIStroke", { Color = BORDER_GOLD, Thickness = 2.5 }, downedCard)
 
@@ -1793,6 +1874,7 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		BackgroundColor3 = BG_CARD,
 		BorderSizePixel = 0,
 	}, summaryOverlay)
+	attachResponsiveScale(summaryCard, 500, 450, 0.52)
 	create("UICorner", { CornerRadius = UDim.new(0, 14) }, summaryCard)
 	create("UIStroke", { Color = BORDER_CYAN, Thickness = 2 }, summaryCard)
 
@@ -2216,6 +2298,7 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 			gCount
 		)
 		openGrimoireBtn.Text = string.format("📖 GRIMOIRE %d/%d [B]", gCount, totalEntries)
+		codexSubLabel.Text = string.format("Bestiary & Guide\n%d/%d Unlocked", gCount, totalEntries)
 
 		local grimoireMap = data.grimoire or {}
 		for _, entry in ipairs(RpgConfig.GRIMOIRE_ENTRIES) do

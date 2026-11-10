@@ -93,10 +93,10 @@ local function syncLeaderstatsAndPrestigeTag(state: State)
 		if not bb then
 			local newBb = Instance.new("BillboardGui")
 			newBb.Name = "HeroPrestigeTag"
-			newBb.Size = UDim2.fromOffset(210, 44)
-			newBb.StudsOffset = Vector3.new(0, 2.7, 0)
-			newBb.AlwaysOnTop = true
-			newBb.MaxDistance = 65
+			newBb.Size = UDim2.fromOffset(135, 26)
+			newBb.StudsOffset = Vector3.new(0, 2.35, 0)
+			newBb.AlwaysOnTop = false
+			newBb.MaxDistance = 26
 			newBb.Parent = head
 
 			local lbl = Instance.new("TextLabel")
@@ -105,7 +105,7 @@ local function syncLeaderstatsAndPrestigeTag(state: State)
 			lbl.BackgroundTransparency = 1
 			lbl.Font = Enum.Font.GothamBlack
 			lbl.RichText = true
-			lbl.TextSize = 12
+			lbl.TextSize = 10
 			lbl.TextColor3 = Color3.fromRGB(255, 230, 130)
 			lbl.TextStrokeColor3 = Color3.fromRGB(8, 10, 16)
 			lbl.TextStrokeTransparency = 0.12
@@ -123,7 +123,7 @@ local function syncLeaderstatsAndPrestigeTag(state: State)
 				then " <font color='#55ffaa'>[Blessed]</font>"
 				else ""
 			lbl.Text = string.format(
-				"%s%s\n<font size='11' color='#a8ffeb'>Hero Lv.%d • M+%d • %d Kills</font>",
+				"%s%s\n<font size='9' color='#a8ffeb'>Hero Lv.%d • M+%d • %d Kills</font>",
 				title,
 				blessBadge,
 				heroLv,

@@ -117,21 +117,21 @@ function MusicController.mount(playerGui: PlayerGui)
 	local pill = Instance.new("Frame")
 	pill.Name = "SynthwaveRadioPill"
 	pill.AnchorPoint = Vector2.new(1, 1)
-	pill.Position = UDim2.new(1, -14, 1, -16)
-	pill.Size = UDim2.fromOffset(310, 38)
+	pill.Position = UDim2.new(1, -12, 1, -8)
+	pill.Size = UDim2.fromOffset(210, 26)
 	pill.BackgroundColor3 = Color3.fromRGB(20, 14, 38)
-	pill.BackgroundTransparency = 0.08
+	pill.BackgroundTransparency = 0.14
 	pill.BorderSizePixel = 0
 	pill.Visible = false
 	pill.Parent = gui
 
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 10)
+	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = pill
 
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Color3.fromRGB(235, 95, 255)
-	stroke.Thickness = 1.8
+	stroke.Thickness = 1.4
 	stroke.Parent = pill
 
 	local grad = Instance.new("UIGradient")
@@ -144,11 +144,11 @@ function MusicController.mount(playerGui: PlayerGui)
 
 	local trackLabel = Instance.new("TextLabel")
 	trackLabel.Name = "TrackLabel"
-	trackLabel.Position = UDim2.fromOffset(10, 0)
-	trackLabel.Size = UDim2.new(1, -92, 1, 0)
+	trackLabel.Position = UDim2.fromOffset(8, 0)
+	trackLabel.Size = UDim2.new(1, -64, 1, 0)
 	trackLabel.BackgroundTransparency = 1
 	trackLabel.Font = Enum.Font.GothamBlack
-	trackLabel.TextSize = 11
+	trackLabel.TextSize = 9
 	trackLabel.TextXAlignment = Enum.TextXAlignment.Left
 	trackLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	trackLabel.TextColor3 = Color3.fromRGB(125, 245, 255)
@@ -160,37 +160,37 @@ function MusicController.mount(playerGui: PlayerGui)
 	local nextBtn = Instance.new("TextButton")
 	nextBtn.Name = "NextTrackBtn"
 	nextBtn.AnchorPoint = Vector2.new(1, 0.5)
-	nextBtn.Position = UDim2.new(1, -44, 0.5, 0)
-	nextBtn.Size = UDim2.fromOffset(34, 26)
+	nextBtn.Position = UDim2.new(1, -30, 0.5, 0)
+	nextBtn.Size = UDim2.fromOffset(22, 18)
 	nextBtn.BackgroundColor3 = Color3.fromRGB(88, 32, 145)
 	nextBtn.BorderSizePixel = 0
 	nextBtn.AutoButtonColor = true
 	nextBtn.Font = Enum.Font.GothamBlack
-	nextBtn.TextSize = 11
+	nextBtn.TextSize = 9
 	nextBtn.TextColor3 = Color3.new(1, 1, 1)
 	nextBtn.Text = "⏭️"
 	nextBtn.Parent = pill
 
 	local nextCorner = Instance.new("UICorner")
-	nextCorner.CornerRadius = UDim.new(0, 6)
+	nextCorner.CornerRadius = UDim.new(0, 5)
 	nextCorner.Parent = nextBtn
 
 	local muteBtn = Instance.new("TextButton")
 	muteBtn.Name = "MuteBtn"
 	muteBtn.AnchorPoint = Vector2.new(1, 0.5)
-	muteBtn.Position = UDim2.new(1, -6, 0.5, 0)
-	muteBtn.Size = UDim2.fromOffset(34, 26)
+	muteBtn.Position = UDim2.new(1, -5, 0.5, 0)
+	muteBtn.Size = UDim2.fromOffset(22, 18)
 	muteBtn.BackgroundColor3 = Color3.fromRGB(28, 76, 118)
 	muteBtn.BorderSizePixel = 0
 	muteBtn.AutoButtonColor = true
 	muteBtn.Font = Enum.Font.GothamBlack
-	muteBtn.TextSize = 11
+	muteBtn.TextSize = 9
 	muteBtn.TextColor3 = Color3.new(1, 1, 1)
 	muteBtn.Text = "🔊"
 	muteBtn.Parent = pill
 
 	local muteCorner = Instance.new("UICorner")
-	muteCorner.CornerRadius = UDim.new(0, 6)
+	muteCorner.CornerRadius = UDim.new(0, 5)
 	muteCorner.Parent = muteBtn
 
 	local function getTargetVolume(): number
