@@ -566,6 +566,17 @@ function PlayerState.startRun(state: State, isCoopDeploy: boolean?): boolean
 	if state.phase ~= "Lobby" and state.phase ~= "Summary" then
 		return false
 	end
+	local anyOtherInRun = false
+	for _, other in states do
+		if other ~= state and (other.phase == "InRun" or other.phase == "Downed") then
+			anyOtherInRun = true
+			break
+		end
+	end
+	if not anyOtherInRun then
+		local Director = require(script.Parent.Director)
+		Director.resetRound()
+	end
 	local bonuses = DataService.computeBonuses(state.player)
 	local profile = DataService.getProfile(state.player)
 	local friendMult = 1 + countFriendsInServer(state.player) * 0.10
@@ -1374,7 +1385,7 @@ local function resolveOffer(state: State, slot: number): boolean
 	end
 	state.offer = nil
 	state.pendingLevelUps = math.max(0, state.pendingLevelUps - 1)
-	state.nextOfferAllowedAt = os.clock() + 6.0
+	state.nextOfferAllowedAt = os.clock() + 8.0
 	Upgrades.apply(state, choice)
 	DataService.recordDiscovery(state.player, choice.id)
 	applyHumanoidStats(state)

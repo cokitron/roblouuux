@@ -58,7 +58,7 @@ local function pickKind(elapsed: number): string
 	return EARLY_MONSTERS[rng:NextInteger(1, #EARLY_MONSTERS)]
 end
 
-local function resetRound()
+function Director.resetRound()
 	roundStart = nil
 	spawnTimer = 0
 	formationTimer = 0
@@ -68,6 +68,8 @@ local function resetRound()
 	WeaponService.clearAll()
 	Arena.rebuild()
 end
+
+local resetRound = Director.resetRound
 
 local function clampAndResolveSpawn(x: number, z: number): (number, number)
 	local limit = Constants.ARENA_HALF_SIZE - 4

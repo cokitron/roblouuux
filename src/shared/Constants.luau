@@ -1,7 +1,10 @@
 --!strict
 
 local function xpForLevel(level: number): number
-	return math.floor(8 + (level - 1) * 12 + (level - 1) ^ 1.75 * 4)
+	if level <= 1 then
+		return 6
+	end
+	return math.floor(10 + (level - 1) * 14 + (level - 1) ^ 2 * 3)
 end
 
 local Constants = {
@@ -69,10 +72,10 @@ local Constants = {
 	RESUME_GRACE_SECONDS = 1,
 
 	MAX_ENEMIES = 150,
-	BASE_ENEMIES = 12,
-	ENEMIES_PER_SECOND = 0.35,
-	SPAWN_INTERVAL = 0.3,
-	SPAWN_BATCH = 4,
+	BASE_ENEMIES = 10,
+	ENEMIES_PER_SECOND = 0.28,
+	SPAWN_INTERVAL = 0.55,
+	SPAWN_BATCH = 3,
 	SPAWN_RADIUS_MIN = 58,
 	SPAWN_RADIUS_MAX = 78,
 	SPAWN_EARLY_RADIUS_MIN = 40,
