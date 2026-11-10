@@ -1241,6 +1241,37 @@ function PlayerState.applyCrowdControl(
 	return true
 end
 
+function PlayerState.applyKnockback(state: State, dirX: number, dirZ: number, studs: number): boolean
+	if state.phase ~= "InRun" or not state.alive or frozen then
+		return false
+	end
+	local now = os.clock()
+	if now < state.immuneUntil or now < state.dashEndsAt then
+		return false
+	end
+	local root = getRoot(state)
+	if not root then
+		return false
+	end
+	local len = math.sqrt(dirX * dirX + dirZ * dirZ)
+	local nx = if len > 1e-3 then dirX / len else 0
+	local nz = if len > 1e-3 then dirZ / len else 1
+
+	local Arena = require(script.Parent.Arena)
+	local limit = Constants.ARENA_HALF_SIZE
+	local curPos = root.Position
+	local rx, rz =
+		Arena.resolveObstacle(curPos.X + nx * studs, curPos.Z + nz * studs, Constants.PLAYER_RADIUS, studs, false)
+	local clampedX = math.clamp(rx, -limit, limit)
+	local clampedZ = math.clamp(rz, -limit, limit)
+
+	state.moveBudget = math.min(MOVE_BURST_STUDS + 16, state.moveBudget + studs + 5)
+	state.lastValidPosition = Vector3.new(clampedX, curPos.Y, clampedZ)
+	root.CFrame = root.CFrame.Rotation + Vector3.new(clampedX, curPos.Y + 0.3, clampedZ)
+	root.AssemblyLinearVelocity = Vector3.new(nx * 26, 11, nz * 26)
+	return true
+end
+
 function PlayerState.getMaxOffensivePowerRatio(elapsed: number): number
 	local expectedPower = 1.0 + (elapsed / 110) + (elapsed / 220) ^ 1.45
 	local maxRatio = 1.0

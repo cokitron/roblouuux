@@ -32,7 +32,7 @@ type Definition = {
 }
 
 local DEFINITIONS: { [string]: Definition } = {
-	Skeleton = { health = 24, speed = 9.2, damage = 9, experience = 1, radius = 1.5, aiKind = "Pursuer" },
+	Skeleton = { health = 24, speed = 9.2, damage = 9, experience = 1, radius = 1.5, aiKind = "Legionnaire" },
 	Bat = {
 		health = 14,
 		speed = 14.2,
@@ -610,6 +610,26 @@ function EnemyService.step(dt: number)
 	local activeBoss: Enemy? = nil
 	local despawnSq = Constants.DESPAWN_DISTANCE ^ 2
 	local safeDt = math.max(dt, 0.001)
+	local legionThrustCycle = now % 1.85
+
+	-- Track active close-range Crypt Legionnaire launchers per player target (capped at 2 per group)
+	local activeLegionLaunchers: { [PlayerState.Target]: number } = {}
+	for _, enemy in enemies do
+		if not enemy.dead and enemy.aiKind == "Legionnaire" and now < enemy.chargeUntil + 0.55 then
+			local nearest = targets[1]
+			local nearestDistSq = math.huge
+			for _, target in targets do
+				local dx = target.position.X - enemy.x
+				local dz = target.position.Z - enemy.z
+				local distSq = dx * dx + dz * dz
+				if distSq < nearestDistSq then
+					nearest = target
+					nearestDistSq = distSq
+				end
+			end
+			activeLegionLaunchers[nearest] = (activeLegionLaunchers[nearest] or 0) + 1
+		end
+	end
 
 	for _, enemy in enemies do
 		if enemy.isBoss and not enemy.dead then
@@ -638,6 +658,7 @@ function EnemyService.step(dt: number)
 			local prevX = enemy.x
 			local prevZ = enemy.z
 			local dist = math.sqrt(nearestDistSq)
+			local ai = enemy.aiKind
 
 			if dist > enemy.radius then
 				-- Velocity interception & crescent flank fan (anti-conga-line steering)
@@ -650,7 +671,7 @@ function EnemyService.step(dt: number)
 				local dirX = rawDx / rawLen
 				local dirZ = rawDz / rawLen
 
-				if dist > 10 then
+				if dist > 10 and ai ~= "Legionnaire" then
 					local flankBlend = math.clamp((dist - 10) / 28, 0, 1)
 					local flankAngle = ((enemy.id % 7) - 3) * 0.17 * flankBlend
 					local c = math.cos(flankAngle)
@@ -659,9 +680,87 @@ function EnemyService.step(dt: number)
 				end
 
 				local speedMult = 1.0
-				local ai = enemy.aiKind
 
-				if ai == "Charger" then
+				if ai == "Legionnaire" then
+					enemy.chargeCooldown -= dt
+					if now < enemy.chargeUntil then
+						-- Active close-range Breacher Launch (at most 2 per group)
+						dirX = enemy.chargeDirX
+						dirZ = enemy.chargeDirZ
+						speedMult = 2.75
+					elseif
+						enemy.chargeCooldown <= 0
+						and dist >= 4.0
+						and dist <= 10.5
+						and (activeLegionLaunchers[nearest] or 0) < 2
+					then
+						activeLegionLaunchers[nearest] = (activeLegionLaunchers[nearest] or 0) + 1
+						enemy.chargeCooldown = rng:NextNumber(4.4, 6.8)
+						enemy.chargeUntil = now + 0.42
+						enemy.chargeDirX = dirX
+						enemy.chargeDirZ = dirZ
+						speedMult = 2.75
+					else
+						-- Loose Phalanx Cohort Alignment: align into a side-by-side shield line with nearby Legionnaires
+						local cx = math.floor(enemy.x / CELL_SIZE)
+						local cz = math.floor(enemy.z / CELL_SIZE)
+						local sumX = 0
+						local sumZ = 0
+						local squadCount = 0
+						for ox = -1, 1 do
+							for oz = -1, 1 do
+								local bucket = spatialGrid[getCellKey(cx + ox, cz + oz)]
+								if bucket then
+									for _, mate in bucket do
+										if
+											mate ~= enemy
+											and not mate.dead
+											and mate.aiKind == "Legionnaire"
+											and now >= mate.chargeUntil
+										then
+											local mdx = mate.x - enemy.x
+											local mdz = mate.z - enemy.z
+											if mdx * mdx + mdz * mdz <= 121 then
+												sumX += mate.x
+												sumZ += mate.z
+												squadCount += 1
+											end
+										end
+									end
+								end
+							end
+						end
+						if squadCount > 0 and dist > 4.5 then
+							local cenX = sumX / squadCount
+							local cenZ = sumZ / squadCount
+							local cDx = nearest.position.X - cenX
+							local cDz = nearest.position.Z - cenZ
+							local squadDist = math.sqrt(cDx * cDx + cDz * cDz)
+							-- Nudge faster/slower so lagging Legionnaires catch up to the cohort's front rank line
+							local distDiff = dist - squadDist
+							speedMult = math.clamp(1.0 + distDiff * 0.14, 0.78, 1.28)
+							-- Gently pull toward cohort lateral cohesion while keeping formation width
+							local toCenX = cenX - enemy.x
+							local toCenZ = cenZ - enemy.z
+							local toCenLen = math.sqrt(toCenX * toCenX + toCenZ * toCenZ)
+							if toCenLen > 3.2 then
+								dirX = dirX * 0.78 + (toCenX / toCenLen) * 0.22
+								dirZ = dirZ * 0.78 + (toCenZ / toCenLen) * 0.22
+								local nLen = math.max(math.sqrt(dirX * dirX + dirZ * dirZ), 0.001)
+								dirX /= nLen
+								dirZ /= nLen
+							end
+						end
+						-- Synchronized Phalanx Thrust Cadence when within 14.5 studs of the player
+						if dist <= 14.5 then
+							if legionThrustCycle < 0.30 then
+								speedMult *= 0.55 -- Cohort braces shields together before thrusting
+							elseif legionThrustCycle < 0.58 then
+								speedMult *= 1.48 -- Synchronized phalanx forward thrust step!
+							end
+						end
+					end
+				elseif ai == "Charger" then
 					enemy.chargeCooldown -= dt
 					if now < enemy.chargeUntil then
 						dirX = enemy.chargeDirX
@@ -695,7 +794,7 @@ function EnemyService.step(dt: number)
 					dirX, dirZ = dirX * c - dirZ * s, dirX * s + dirZ * c
 				end
 
-				-- Look-ahead obstacle whisker steering
+				-- Look-ahead obstacle whisker steering (Legionnaires break formation around obstacles and reform)
 				dirX, dirZ =
 					Arena.steerAroundObstacles(enemy.x, enemy.z, dirX, dirZ, enemy.radius, enemy.id, enemy.isFlyer)
 
@@ -729,8 +828,23 @@ function EnemyService.step(dt: number)
 				end
 			end
 
-			if dist < enemy.radius + Constants.PLAYER_RADIUS then
+			local hitReach = enemy.radius + Constants.PLAYER_RADIUS
+			if ai == "Legionnaire" then
+				if now < enemy.chargeUntil then
+					hitReach += 1.1
+				elseif legionThrustCycle >= 0.32 and legionThrustCycle <= 0.56 then
+					hitReach += 1.35
+				end
+			end
+
+			if dist < hitReach then
 				local state = nearest.state
+				if ai == "Legionnaire" and now < enemy.chargeUntil then
+					enemy.chargeUntil = 0
+					if PlayerState.applyKnockback(state, enemy.chargeDirX, enemy.chargeDirZ, 6.2) then
+						Replication.queueShockwave(nearest.position.X, nearest.position.Z, 5.2)
+					end
+				end
 				if PlayerState.damage(state, enemy.damage) and state.thorns > 0 then
 					EnemyService.damage(enemy, state.thorns * state.damageMultiplier, state)
 				end

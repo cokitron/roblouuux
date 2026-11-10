@@ -19,6 +19,7 @@ local PANEL = Color3.fromRGB(22, 16, 42)
 local STROKE_DARK = Color3.fromRGB(8, 5, 18)
 
 local SHOWCASE_MONSTERS = {
+	{ kind = "Skeleton", label = "🛡️ Crypt Legionnaire" },
 	{ kind = "PlagueSlime", label = "🟢 Plague Slime" },
 	{ kind = "InfernalImp", label = "🔥 Infernal Imp" },
 	{ kind = "FrostWyrm", label = "❄️ Frost Wyrm" },

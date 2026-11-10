@@ -2824,131 +2824,154 @@ function EnemyCandidates.buildSkeletonWarrior(): Model
 	local model = Instance.new("Model")
 	model.Name = "Skeleton"
 	createPivot(model)
+	local assets = EnemyCandidates.CREATOR_STORE_ASSETS
 
-	-- Sculpted Pelvis & Spine
+	-- 1. Legionnaire Pteruges War-Belt & Pelvis
 	makePart({
 		name = "PelvisBone",
-		size = Vector3.new(1.15, 0.45, 0.75),
-		cframe = CFrame.new(0, 1.45, 0),
-		color = BONE_DARK,
+		size = Vector3.new(1.22, 0.52, 0.82),
+		cframe = CFrame.new(0, 1.42, 0),
+		color = Color3.fromRGB(115, 28, 38),
+		material = Enum.Material.Fabric,
+		parent = model,
+	})
+
+	-- 2. Sculpted 3D Ribcage Cuirass (SkeletonRibcage 3284551923)
+	makePart({
+		name = "SpineRibcage",
+		size = Vector3.new(1.38, 1.52, 0.95),
+		cframe = CFrame.new(0, 2.26, 0),
+		color = BONE_PALE,
 		material = Enum.Material.Slate,
+		storeAssetId = assets.SkeletonRibcage,
+		keepStoreTexture = true,
+		parent = model,
+	})
+
+	-- 3. Glowing Soul-Flame Heart inside Ribcage
+	makePart({
+		name = "SoulHeartCore",
+		size = Vector3.new(0.42, 0.52, 0.42),
+		cframe = CFrame.new(0, 2.24, -0.06),
+		color = NEON_SOUL_CYAN,
+		material = Enum.Material.Neon,
+		shape = Enum.PartType.Ball,
+		parent = model,
+		castShadow = false,
+	})
+
+	-- 4 & 5. Legionnaire Iron Shoulder Pauldrons
+	makePart({
+		name = "PauldronL",
+		size = Vector3.new(0.58, 0.44, 0.72),
+		cframe = CFrame.new(-0.84, 2.78, 0) * CFrame.Angles(0, 0, 0.25),
+		color = IRON_DARK,
+		material = Enum.Material.Metal,
 		parent = model,
 	})
 	makePart({
-		name = "SpineColumn",
-		size = Vector3.new(0.32, 1.55, 0.35),
-		cframe = CFrame.new(0, 2.25, 0.12),
-		color = BONE_DARK,
-		material = Enum.Material.Slate,
+		name = "PauldronR",
+		size = Vector3.new(0.58, 0.44, 0.72),
+		cframe = CFrame.new(0.84, 2.78, 0) * CFrame.Angles(0, 0, -0.25),
+		color = IRON_DARK,
+		material = Enum.Material.Metal,
 		parent = model,
 	})
 
-	-- Curved Ribcage Tiers (3 sculpted rib arches)
-	for i = 1, 3 do
-		local y = 1.85 + (i - 1) * 0.34
-		local w = 1.15 + (i == 2 and 0.18 or 0)
-		makePart({
-			name = "RibArch" .. i,
-			size = Vector3.new(w, 0.24, 0.82),
-			cframe = CFrame.new(0, y, -0.02),
-			color = BONE_PALE,
-			material = Enum.Material.Slate,
-			meshType = Enum.MeshType.Sphere,
-			parent = model,
-		})
-	end
-
-	-- Sculpted Skull (Cranium + Cheekbones + Jaw + Glowing Eye Sockets)
+	-- 6 & 7. Sculpted 3D Skull (SkullOfAinz 2445801226) + Crimson Centurion Plume Crest
 	makePart({
 		name = "SkullCranium",
-		size = Vector3.new(1.05, 1.05, 1.15),
-		cframe = CFrame.new(0, 3.45, -0.05),
+		size = Vector3.new(1.12, 1.14, 1.18),
+		cframe = CFrame.new(0, 3.46, -0.05),
 		color = BONE_PALE,
 		material = Enum.Material.Slate,
-		meshType = Enum.MeshType.Sphere,
+		storeAssetId = assets.SkullOfAinz,
+		keepStoreTexture = true,
 		parent = model,
 	})
 	makePart({
-		name = "SkullJaw",
-		size = Vector3.new(0.68, 0.38, 0.72),
-		cframe = CFrame.new(0, 2.95, -0.18),
-		color = BONE_DARK,
-		material = Enum.Material.Slate,
+		name = "Head_LegionCrest",
+		size = Vector3.new(0.22, 0.52, 1.24),
+		cframe = CFrame.new(0, 4.12, 0.02) * CFrame.Angles(-0.12, 0, 0),
+		color = Color3.fromRGB(185, 34, 48),
+		material = Enum.Material.Fabric,
 		parent = model,
 	})
+
+	-- 8 & 9. Blazing Cyan Soul Eye Sockets
 	makePart({
-		name = "EyeLeft",
+		name = "Skull_EyeLeft",
 		size = Vector3.new(0.24, 0.22, 0.24),
-		cframe = CFrame.new(-0.26, 3.42, -0.56),
+		cframe = CFrame.new(-0.26, 3.44, -0.58),
 		color = NEON_SOUL_CYAN,
 		material = Enum.Material.Neon,
 		parent = model,
 		castShadow = false,
 	})
 	makePart({
-		name = "EyeRight",
+		name = "Skull_EyeRight",
 		size = Vector3.new(0.24, 0.22, 0.24),
-		cframe = CFrame.new(0.26, 3.42, -0.56),
+		cframe = CFrame.new(0.26, 3.44, -0.58),
 		color = NEON_SOUL_CYAN,
 		material = Enum.Material.Neon,
 		parent = model,
 		castShadow = false,
 	})
 
-	-- Articulated Legs (LegL / LegR for walk cycle)
+	-- 10 & 11. Articulated Marching Greaves (LegL / LegR)
 	makePart({
-		name = "LegL_Femur",
-		size = Vector3.new(0.32, 1.35, 0.32),
+		name = "LegL_Greave",
+		size = Vector3.new(0.36, 1.38, 0.38),
 		cframe = CFrame.new(-0.42, 0.72, 0),
-		color = BONE_PALE,
-		material = Enum.Material.Slate,
+		color = IRON_DARK,
+		material = Enum.Material.Metal,
 		parent = model,
 	})
 	makePart({
-		name = "LegR_Femur",
-		size = Vector3.new(0.32, 1.35, 0.32),
+		name = "LegR_Greave",
+		size = Vector3.new(0.36, 1.38, 0.38),
 		cframe = CFrame.new(0.42, 0.72, 0),
-		color = BONE_PALE,
-		material = Enum.Material.Slate,
+		color = IRON_DARK,
+		material = Enum.Material.Metal,
 		parent = model,
 	})
 
-	-- Left Shield Arm + Round Buckler Shield
+	-- 12 & 13. Left Shield Arm + Rectangular Legionnaire Scutum Tower Shield (Held forward in phalanx wall)
 	makePart({
 		name = "ArmL_Bone",
-		size = Vector3.new(0.28, 1.25, 0.28),
-		cframe = CFrame.new(-0.85, 2.25, -0.25) * CFrame.Angles(0.45, 0, 0.15),
+		size = Vector3.new(0.30, 1.22, 0.30),
+		cframe = CFrame.new(-0.86, 2.22, -0.32) * CFrame.Angles(0.65, 0.22, 0.12),
 		color = BONE_PALE,
 		material = Enum.Material.Slate,
 		parent = model,
 	})
 	makePart({
-		name = "ArmL_BucklerShield",
-		size = Vector3.new(0.25, 1.45, 1.45),
-		cframe = CFrame.new(-1.12, 2.1, -0.55) * CFrame.Angles(0, 0.35, math.pi * 0.5),
+		name = "ArmL_ScutumShield",
+		size = Vector3.new(1.38, 2.18, 0.24),
+		cframe = CFrame.new(-0.58, 2.08, -0.78) * CFrame.Angles(0, 0.22, 0),
 		color = BRONZE_CORRODED,
 		material = Enum.Material.Metal,
-		shape = Enum.PartType.Cylinder,
 		parent = model,
 	})
 
-	-- Right Sword Arm + Runic Broadsword
+	-- 14 & 15. Right Thrusting Arm + Forward-Pointed Runic Gladius/Spear Blade (GothicSword 5579516226)
 	makePart({
 		name = "ArmR_Bone",
-		size = Vector3.new(0.28, 1.25, 0.28),
-		cframe = CFrame.new(0.85, 2.25, -0.3) * CFrame.Angles(0.55, 0, -0.15),
+		size = Vector3.new(0.30, 1.25, 0.30),
+		cframe = CFrame.new(0.88, 2.22, -0.28) * CFrame.Angles(1.15, 0, -0.08),
 		color = BONE_PALE,
 		material = Enum.Material.Slate,
 		parent = model,
 	})
 	makePart({
 		name = "Weapon_Runesword",
-		size = Vector3.new(0.18, 2.35, 0.42),
-		cframe = CFrame.new(0.95, 2.65, -1.15) * CFrame.Angles(0.45, 0, 0),
-		color = Color3.fromRGB(165, 225, 255),
-		material = Enum.Material.Metal,
-		meshType = Enum.MeshType.Sphere,
+		size = Vector3.new(0.28, 3.05, 0.52),
+		cframe = CFrame.new(0.92, 2.18, -1.65) * CFrame.Angles(1.38, 0, 0),
+		color = Color3.fromRGB(130, 240, 255),
+		material = Enum.Material.Neon,
+		storeAssetId = assets.GothicSword,
 		parent = model,
+		castShadow = false,
 	})
 	return model
 end

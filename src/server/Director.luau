@@ -179,6 +179,20 @@ function Director.summonMonsterKind(position: Vector3, kind: string, keystoneLev
 	local mult = computeHealthMultiplier(elapsed, keystoneLevel)
 	local isBoss = kind == "GraveReaper" or kind == "HollowArmor" or kind == "OssuaryBehemoth" or kind == "LichLord"
 	local count = if isBoss then 1 else math.min(4, Constants.MAX_ENEMIES - EnemyService.count())
+	if kind == "Skeleton" then
+		local ax, az = EnemyService.randomRingPosition(position, 22, 30)
+		local dx = position.X - ax
+		local dz = position.Z - az
+		local len = math.max(math.sqrt(dx * dx + dz * dz), 0.01)
+		local perpX = -dz / len
+		local perpZ = dx / len
+		for i = 1, count do
+			local offset = (i - (count + 1) * 0.5) * 2.6
+			local sx, sz = clampAndResolveSpawn(ax + perpX * offset, az + perpZ * offset)
+			EnemyService.spawn(kind, Vector3.new(sx, 0, sz), mult)
+		end
+		return
+	end
 	for _ = 1, count do
 		local x, z = EnemyService.randomRingPosition(position)
 		EnemyService.spawn(kind, Vector3.new(x, 0, z), mult)
@@ -266,28 +280,45 @@ function Director.step(dt: number)
 		math.floor((Constants.BASE_ENEMIES + elapsed * Constants.ENEMIES_PER_SECOND) * crowd)
 	)
 	local toSpawn = math.min(desired - EnemyService.count(), Constants.SPAWN_BATCH)
-	for _ = 1, toSpawn do
+	local spawnedCount = 0
+	while spawnedCount < toSpawn and EnemyService.count() < Constants.MAX_ENEMIES do
 		local target = targets[rng:NextInteger(1, #targets)]
 		local kind = pickKind(elapsed)
+		local ax, az
 		if rng:NextNumber() < Constants.GRAVE_EMERGE_CHANCE then
-			local gx, gz, emerged = EnemyService.pickEmergencePosition(target.position)
+			local emerged
+			ax, az, emerged = EnemyService.pickEmergencePosition(target.position)
 			if emerged then
-				Replication.queueEmergence(gx, gz)
+				Replication.queueEmergence(ax, az)
 			end
-			EnemyService.spawn(kind, Vector3.new(gx, 0, gz), healthMultiplier)
+		elseif elapsed < 35 then
+			-- Tighter early-run ring so first auto-attack lands within 10s (LOOP-1)
+			ax, az = EnemyService.randomRingPosition(
+				target.position,
+				Constants.SPAWN_EARLY_RADIUS_MIN,
+				Constants.SPAWN_EARLY_RADIUS_MAX
+			)
 		else
-			local x, z
-			if elapsed < 35 then
-				-- Tighter early-run ring so first auto-attack lands within 10s (LOOP-1)
-				x, z = EnemyService.randomRingPosition(
-					target.position,
-					Constants.SPAWN_EARLY_RADIUS_MIN,
-					Constants.SPAWN_EARLY_RADIUS_MAX
-				)
-			else
-				x, z = EnemyService.randomRingPosition(target.position)
+			ax, az = EnemyService.randomRingPosition(target.position)
+		end
+
+		if kind == "Skeleton" then
+			-- Crypt Legionnaires always deploy as a side-by-side 3-to-4-unit Phalanx Cohort
+			local cohortSize = math.min(3, Constants.MAX_ENEMIES - EnemyService.count())
+			local dx = target.position.X - ax
+			local dz = target.position.Z - az
+			local len = math.max(math.sqrt(dx * dx + dz * dz), 0.01)
+			local perpX = -dz / len
+			local perpZ = dx / len
+			for i = 1, cohortSize do
+				local offset = (i - (cohortSize + 1) * 0.5) * 2.55
+				local sx, sz = clampAndResolveSpawn(ax + perpX * offset, az + perpZ * offset)
+				EnemyService.spawn("Skeleton", Vector3.new(sx, 0, sz), healthMultiplier)
+				spawnedCount += 1
 			end
-			EnemyService.spawn(kind, Vector3.new(x, 0, z), healthMultiplier)
+		else
+			EnemyService.spawn(kind, Vector3.new(ax, 0, az), healthMultiplier)
+			spawnedCount += 1
 		end
 	end
 end

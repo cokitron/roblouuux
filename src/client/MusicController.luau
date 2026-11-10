@@ -43,10 +43,10 @@ local GRAVEYARD_PLAYLIST: { TrackDef } = {
 	},
 }
 
-local BASE_VOLUME = 0.44
-local BOSS_VOLUME = 0.58
+local BASE_VOLUME = 0.16
+local BOSS_VOLUME = 0.24
 local CHAPEL_AMBIENCE_ID = "rbxassetid://9125602748" -- Heavenly Presence Eerie Choral Tones Dark Ru (SFX) - ProSoundEffects
-local CHAPEL_VOLUME = 0.28
+local CHAPEL_VOLUME = 0.12
 local FADE_INFO = TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local MusicController = {}

@@ -533,7 +533,13 @@ function WorldRenderer.start()
 
 	local function popAndRemove(entity: Entity)
 		for _, part in entity.parts do
-			TweenService:Create(part, DEATH_TWEEN, { Transparency = 1 }):Play()
+			local scatterGoal: { [string]: any } = {
+				Transparency = 1,
+				CFrame = part.CFrame
+					* CFrame.new(rng:NextNumber(-1.6, 1.6), rng:NextNumber(0.6, 2.1), rng:NextNumber(-1.6, 1.6))
+					* CFrame.Angles(rng:NextNumber(-2.6, 2.6), rng:NextNumber(-2.6, 2.6), 0),
+			}
+			TweenService:Create(part, DEATH_TWEEN, scatterGoal):Play()
 		end
 		Debris:AddItem(entity.root, DEATH_TWEEN.Time + 0.05)
 	end
@@ -1051,6 +1057,17 @@ function WorldRenderer.start()
 		local facingAlpha = 1 - math.exp(-dt * FACING_SHARPNESS)
 		local moved = 0
 
+		local playerPositions: { Vector3 } = {}
+		for _, p in Players:GetPlayers() do
+			local char = p.Character
+			if char then
+				local hrp = char:FindFirstChild("HumanoidRootPart")
+				if hrp and hrp:IsA("BasePart") then
+					table.insert(playerPositions, hrp.Position)
+				end
+			end
+		end
+
 		for id, entity in entities do
 			local samples = entity.samples
 			local count = #samples
@@ -1063,6 +1080,7 @@ function WorldRenderer.start()
 
 			local x, z = last.x, last.z
 			local moveX, moveZ = 0, 0
+			local sampleSpan = 0
 			if count > 1 and renderTime < last.t then
 				if renderTime <= samples[1].t then
 					x, z = samples[1].x, samples[1].z
@@ -1071,7 +1089,8 @@ function WorldRenderer.start()
 						local a = samples[i]
 						if renderTime >= a.t then
 							local b = samples[i + 1]
-							local alpha = (renderTime - a.t) / (b.t - a.t)
+							sampleSpan = b.t - a.t
+							local alpha = (renderTime - a.t) / math.max(sampleSpan, 1e-4)
 							x = a.x + (b.x - a.x) * alpha
 							z = a.z + (b.z - a.z) * alpha
 							moveX, moveZ = b.x - a.x, b.z - a.z
@@ -1084,6 +1103,7 @@ function WorldRenderer.start()
 				local previous = samples[count - 1]
 				local span = last.t - previous.t
 				if span > 1e-4 then
+					sampleSpan = span
 					local ahead = math.min(renderTime - last.t, Constants.MAX_EXTRAPOLATION)
 					moveX, moveZ = last.x - previous.x, last.z - previous.z
 					x = last.x + moveX / span * ahead
@@ -1093,6 +1113,7 @@ function WorldRenderer.start()
 
 			-- Turn toward the direction of travel smoothly so separation jitter does not make enemies twitch.
 			local moveLength = math.sqrt(moveX * moveX + moveZ * moveZ)
+			local sampleSpeed = if sampleSpan > 1e-4 then moveLength / sampleSpan else 0
 			if moveLength > 1e-3 then
 				entity.facingX += (moveX / moveLength - entity.facingX) * facingAlpha
 				entity.facingZ += (moveZ / moveLength - entity.facingZ) * facingAlpha
@@ -1123,6 +1144,49 @@ function WorldRenderer.start()
 			local tailWag = CFrame.Angles(s * 0.12, c * 0.32, 0)
 			local orbitSpin = CFrame.Angles(0, phase * 0.55, 0) * CFrame.new(0, s * 0.16, 0)
 			local headLook = CFrame.Angles(c * 0.09, s * 0.11, 0)
+
+			-- Crypt Legionnaire (Skeleton): Synchronized Phalanx Thrust & Close-Range Breacher Launch
+			if visual.name == "Skeleton" then
+				local minPlayerDistSq = math.huge
+				for _, pPos in playerPositions do
+					local dx = pPos.X - x
+					local dz = pPos.Z - z
+					local dSq = dx * dx + dz * dz
+					if dSq < minPlayerDistSq then
+						minPlayerDistSq = dSq
+					end
+				end
+
+				if sampleSpeed > 17.5 then
+					-- Airborne Close-Range Breacher Launch (at most 2 per cohort): leaps forward & rams shield/blade!
+					local launchWave = math.sin((renderTime * 14) % math.pi)
+					bobY = 0.95 + 0.45 * launchWave
+					pitchX = -0.46
+					legSwingL = CFrame.Angles(-0.55, 0, 0)
+					legSwingR = CFrame.Angles(0.35, 0, 0)
+					armSwingL = CFrame.new(0, 0.15, -0.65) * CFrame.Angles(0.55, 0.35, 0)
+					armSwingR = CFrame.new(0, 0.2, -1.85) * CFrame.Angles(0.35, 0, 0)
+				elseif minPlayerDistSq <= 15 * 15 then
+					-- Shared cohort cadence (no per-entity phase offset!) so the entire line thrusts in unison
+					local legionCycle = renderTime % 1.85
+					if legionCycle < 0.30 then
+						-- Synchronized Shield-Wall Brace & Wind-Up
+						local windAlpha = legionCycle / 0.30
+						pitchX = 0.08 * windAlpha
+						armSwingL = CFrame.new(0.18 * windAlpha, 0, -0.25 * windAlpha)
+							* CFrame.Angles(0.2 * windAlpha, 0.35 * windAlpha, 0)
+						armSwingR = CFrame.new(0, 0.1 * windAlpha, 0.75 * windAlpha)
+							* CFrame.Angles(-0.35 * windAlpha, 0, 0)
+					elseif legionCycle < 0.58 then
+						-- Synchronized Phalanx Blade Thrust!
+						local thrustAlpha = math.sin(((legionCycle - 0.30) / 0.28) * math.pi)
+						pitchX = -0.28 * thrustAlpha
+						armSwingL = CFrame.new(0.18, 0, -0.25) * CFrame.Angles(0.2, 0.35, 0)
+						armSwingR = CFrame.new(0, 0.12 * thrustAlpha, -1.95 * thrustAlpha)
+							* CFrame.Angles(0.25 * thrustAlpha, 0, 0)
+					end
+				end
+			end
 
 			-- Light Animation: Organic multi-sine candle/soul flicker on monster PointLights
 			if #entity.lights > 0 then
