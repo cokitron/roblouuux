@@ -62,8 +62,13 @@ local function processReceipt(receiptInfo: ReceiptInfo): Enum.ProductPurchaseDec
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local state = PlayerState.get(player)
-	if not state then
+	local profile = DataService.getProfile(player)
+	if not state or not profile then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	if profile.processedReceipts[purchaseId] then
+		processedReceipts[purchaseId] = true
+		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 
 	local productId = receiptInfo.ProductId
@@ -84,10 +89,8 @@ local function processReceipt(receiptInfo: ReceiptInfo): Enum.ProductPurchaseDec
 
 	if granted then
 		processedReceipts[purchaseId] = true
-		local profile = DataService.getProfile(player)
-		if profile then
-			profile.processedReceipts[purchaseId] = true
-		end
+		profile.processedReceipts[purchaseId] = true
+		task.spawn(DataService.savePlayer, player)
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 
@@ -140,7 +143,10 @@ function MonetizationService.requestReroll(state: ServerTypes.State): boolean
 		end)
 		return true
 	end
-	return PlayerState.rerollOffer(state, true)
+	if RunService:IsStudio() then
+		return PlayerState.rerollOffer(state, true)
+	end
+	return false
 end
 
 function MonetizationService.requestClaimAll(state: ServerTypes.State): boolean
@@ -156,7 +162,10 @@ function MonetizationService.requestClaimAll(state: ServerTypes.State): boolean
 		end)
 		return true
 	end
-	return PlayerState.claimAllOffer(state)
+	if RunService:IsStudio() then
+		return PlayerState.claimAllOffer(state)
+	end
+	return false
 end
 
 function MonetizationService.requestBloodMoon(player: Player): boolean

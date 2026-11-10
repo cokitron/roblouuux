@@ -1,6 +1,7 @@
 --!strict
 local AnalyticsService = game:GetService("AnalyticsService")
 local DataStoreService = game:GetService("DataStoreService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -73,6 +74,7 @@ local AUTOSAVE_INTERVAL = 120
 
 local rpgSyncRemote = Remotes.get("RpgSync")
 local profiles: { [Player]: Profile } = {}
+local loadFailed: { [Player]: boolean } = {}
 local rng = Random.new()
 local store: DataStore? = nil
 local bloodMoonEndsAt = 0
@@ -274,6 +276,11 @@ function DataService.computeBonuses(player: Player): ComputedBonuses
 		armorBonus += 2
 		regenBonus += 1.5
 	end
+	local ascensionRanks = t.meta_ascension or 0
+	if ascensionRanks > 0 then
+		damagePct += ascensionRanks * 2
+		bonusHp += ascensionRanks * 4
+	end
 
 	-- 2. Equipped 6-Slot Gear + Slot Enchantments + Set Count
 	local totalIlvl = 0
@@ -337,7 +344,27 @@ function DataService.computeBonuses(player: Player): ComputedBonuses
 		startingDice += 1
 	end
 
-	local soulsMult = 1
+	local soulsMult = 1 + (t.meta_ascension or 0) * 0.03
+	-- Order of the Violet Star Reputation passive standing rewards
+	if profile.reputation >= 15000 then
+		soulsMult *= 1.15
+		damagePct += 10
+		startingDice += 1
+	elseif profile.reputation >= 7000 then
+		soulsMult *= 1.10
+		damagePct += 6
+	elseif profile.reputation >= 3000 then
+		soulsMult *= 1.06
+		damagePct += 3
+	elseif profile.reputation >= 1000 then
+		soulsMult *= 1.03
+	end
+	-- Co-Op Friend Boost (+10% Bonus XP & Souls per friend in server, LOOP-6)
+	local friendBoostPct = (player:GetAttribute("FriendBoostPct") :: number?) or 0
+	if friendBoostPct > 0 then
+		xpPct += friendBoostPct
+		soulsMult *= (1 + friendBoostPct / 100)
+	end
 	if profile.passDoubleSouls then
 		soulsMult *= 2
 	end
@@ -449,34 +476,95 @@ function DataService.loadPlayer(player: Player): Profile
 
 	local loaded: any = nil
 	if store and player.UserId > 0 then
-		pcall(function()
-			loaded = (store :: DataStore):GetAsync("User_" .. tostring(player.UserId))
-		end)
+		local ok = false
+		for attempt = 1, 3 do
+			local callOk, result = pcall(function()
+				return (store :: DataStore):GetAsync("User_" .. tostring(player.UserId))
+			end)
+			if callOk then
+				ok = true
+				loaded = result
+				break
+			end
+			if attempt < 3 then
+				task.wait(0.4 * attempt)
+			end
+		end
+		if not ok then
+			loadFailed[player] = true
+		end
 	end
 
 	local profile = reconcileProfile(loaded)
 	profiles[player] = profile
 	DataService.sync(player)
+
+	-- Reconcile web/store GamePass ownership on join (MON-2)
+	if player.UserId > 0 then
+		task.spawn(function()
+			local changed = false
+			if not profile.passMagnet and Constants.PASS_MAGNET_ID > 0 then
+				local ok, owns = pcall(function()
+					return MarketplaceService:UserOwnsGamePassAsync(player.UserId, Constants.PASS_MAGNET_ID)
+				end)
+				if ok and owns then
+					profile.passMagnet = true
+					changed = true
+				end
+			end
+			if not profile.passFourthCard and Constants.PASS_FOURTH_CARD_ID > 0 then
+				local ok, owns = pcall(function()
+					return MarketplaceService:UserOwnsGamePassAsync(player.UserId, Constants.PASS_FOURTH_CARD_ID)
+				end)
+				if ok and owns then
+					profile.passFourthCard = true
+					changed = true
+				end
+			end
+			if not profile.passDoubleSouls and Constants.PASS_DOUBLE_SOULS_ID > 0 then
+				local ok, owns = pcall(function()
+					return MarketplaceService:UserOwnsGamePassAsync(player.UserId, Constants.PASS_DOUBLE_SOULS_ID)
+				end)
+				if ok and owns then
+					profile.passDoubleSouls = true
+					changed = true
+				end
+			end
+			if changed and profiles[player] == profile then
+				DataService.sync(player)
+			end
+		end)
+	end
+
 	return profile
 end
 
 function DataService.savePlayer(player: Player)
 	local profile = profiles[player]
-	if not profile or not store or player.UserId <= 0 then
+	if not profile or loadFailed[player] or not store or player.UserId <= 0 then
 		return
 	end
 	local copy = table.clone(profile)
 	copy.lastLootDrop = nil
-	pcall(function()
-		(store :: DataStore):UpdateAsync("User_" .. tostring(player.UserId), function()
-			return copy
+	for attempt = 1, 3 do
+		local ok = pcall(function()
+			(store :: DataStore):UpdateAsync("User_" .. tostring(player.UserId), function()
+				return copy
+			end)
 		end)
-	end)
+		if ok then
+			break
+		end
+		if attempt < 3 then
+			task.wait(0.5 * attempt)
+		end
+	end
 end
 
 function DataService.removePlayer(player: Player)
 	DataService.savePlayer(player)
 	profiles[player] = nil
+	loadFailed[player] = nil
 end
 
 function DataService.addLootItem(player: Player, item: GearItem)

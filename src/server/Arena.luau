@@ -1772,7 +1772,25 @@ end
 
 function Arena.spawnReliquaryChest(x: number, z: number, isBoss: boolean)
 	if #reliquaryChests >= Constants.MAX_RELIQUARY_CHESTS then
-		return
+		if isBoss then
+			local evicted = false
+			for idx = 1, #reliquaryChests do
+				if not reliquaryChests[idx].isBoss then
+					local old = reliquaryChests[idx]
+					if old.model then
+						old.model:Destroy()
+					end
+					table.remove(reliquaryChests, idx)
+					evicted = true
+					break
+				end
+			end
+			if not evicted then
+				return
+			end
+		else
+			return
+		end
 	end
 	local root = arenaFolder or Workspace:FindFirstChild("Arena")
 	local decor = root and root:FindFirstChild("RunDecor")
@@ -1949,7 +1967,9 @@ function Arena.stepShrines(
 						chest.model:Destroy()
 						chest.model = nil
 					end
-					PlayerState.grantReliquaryChest(t.state, chest.isBoss)
+					for _, runner in targets do
+						PlayerState.grantReliquaryChest(runner.state, chest.isBoss)
+					end
 					local Replication = require(script.Parent.Replication)
 					Replication.queueShockwave(chest.x, chest.z, 16)
 					table.remove(reliquaryChests, i)
@@ -2693,7 +2713,7 @@ function Arena.build()
 			{
 				id = "ArcanistStaff",
 				title = "🔮 Arcanist's Staff",
-				subtitle = "Homing Bolts • Evo: Astral Singularity",
+				subtitle = "Homing Bolts • Evo: Astral Starfall",
 				prefab = "Relic_MagicBolt",
 				z = -265,
 				color = Color3.fromRGB(95, 225, 255),
@@ -2701,7 +2721,7 @@ function Arena.build()
 			{
 				id = "CryptCleaver",
 				title = "🪓 Crypt Cleaver",
-				subtitle = "150° Frontal Cone • Evo: Reaper's Guillotine",
+				subtitle = "125° Frontal Cone • Evo: Crimson Guillotine",
 				prefab = "Relic_CryptCleaver",
 				z = -276,
 				color = Color3.fromRGB(205, 135, 255),
@@ -2709,7 +2729,7 @@ function Arena.build()
 			{
 				id = "SoulflameLantern",
 				title = "🏮 Soulflame Lantern",
-				subtitle = "Sacred Burn Zones • Evo: Purgatory Pyre",
+				subtitle = "Sacred Burn Zones • Evo: Ashen Hellstorm",
 				prefab = "Graveyard_Lantern",
 				z = -287,
 				color = Color3.fromRGB(255, 185, 80),
@@ -2717,7 +2737,7 @@ function Arena.build()
 			{
 				id = "PhantomBow",
 				title = "🏹 Phantom Longbow",
-				subtitle = "High-Crit Piercing • Evo: Wraith Volley",
+				subtitle = "High-Crit Piercing • Evo: Thousand-Arrow Tempest",
 				prefab = "Relic_PhantomBow",
 				z = -298,
 				color = Color3.fromRGB(95, 255, 170),
@@ -2725,7 +2745,7 @@ function Arena.build()
 			{
 				id = "HexlockPistols",
 				title = "🔫 Hexlock Pistols",
-				subtitle = "Rapid Twin-Shot • Evo: Dread Barrage",
+				subtitle = "Rapid Twin-Shot • Evo: Silver Executioner",
 				prefab = "Relic_HexlockPistols",
 				z = -309,
 				color = Color3.fromRGB(255, 105, 135),
@@ -2733,7 +2753,7 @@ function Arena.build()
 			{
 				id = "StormcallerTome",
 				title = "⚡ Stormcaller Grimoire",
-				subtitle = "Chain Lightning • Evo: Tempest Supercell",
+				subtitle = "Chain Lightning • Evo: Mjolnir's Wrath",
 				prefab = "Relic_StormcallerTome",
 				z = -320,
 				color = Color3.fromRGB(125, 210, 255),
@@ -2765,8 +2785,8 @@ function Arena.build()
 			local wBb = Instance.new("BillboardGui")
 			wBb.Size = UDim2.fromOffset(230, 52)
 			wBb.StudsOffset = Vector3.new(0, 4.8, 0)
-			wBb.AlwaysOnTop = true
-			wBb.MaxDistance = 75
+			wBb.AlwaysOnTop = false
+			wBb.MaxDistance = 42
 			wBb.Parent = ped
 
 			local wLbl = Instance.new("TextLabel")
@@ -2870,8 +2890,8 @@ function Arena.build()
 			local dBb = Instance.new("BillboardGui")
 			dBb.Size = UDim2.fromOffset(200, 36)
 			dBb.StudsOffset = Vector3.new(0, 3.6, 0)
-			dBb.AlwaysOnTop = true
-			dBb.MaxDistance = 75
+			dBb.AlwaysOnTop = false
+			dBb.MaxDistance = 42
 			dBb.Parent = torso
 
 			local dLbl = Instance.new("TextLabel")
@@ -2890,8 +2910,8 @@ function Arena.build()
 				dpsBb.Name = "SanctuaryDpsBillboard"
 				dpsBb.Size = UDim2.fromOffset(340, 74)
 				dpsBb.StudsOffset = Vector3.new(0, 6.8, 0)
-				dpsBb.AlwaysOnTop = true
-				dpsBb.MaxDistance = 100
+				dpsBb.AlwaysOnTop = false
+				dpsBb.MaxDistance = 55
 				dpsBb.Parent = torso
 
 				local dpsLbl = Instance.new("TextLabel")
@@ -2967,8 +2987,8 @@ function Arena.build()
 			local sBb = Instance.new("BillboardGui")
 			sBb.Size = UDim2.fromOffset(260, 56)
 			sBb.StudsOffset = Vector3.new(0, 4.4, 0)
-			sBb.AlwaysOnTop = true
-			sBb.MaxDistance = 85
+			sBb.AlwaysOnTop = false
+			sBb.MaxDistance = 52
 			sBb.Parent = ring
 
 			local sLbl = Instance.new("TextLabel")
@@ -3019,8 +3039,8 @@ function Arena.build()
 			local hBb = Instance.new("BillboardGui")
 			hBb.Size = UDim2.fromOffset(230, 110)
 			hBb.StudsOffset = Vector3.new(0, 1.2, 0)
-			hBb.AlwaysOnTop = true
-			hBb.MaxDistance = 75
+			hBb.AlwaysOnTop = false
+			hBb.MaxDistance = 52
 			hBb.Parent = stele
 
 			local hLbl = Instance.new("TextLabel")

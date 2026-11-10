@@ -4,7 +4,7 @@ local function xpForLevel(level: number): number
 	if level <= 1 then
 		return 6
 	end
-	return math.floor(10 + (level - 1) * 14 + (level - 1) ^ 2 * 3)
+	return math.floor(8 + (level - 1) * 9 + (level - 1) ^ 1.75 * 1.6)
 end
 
 local Constants = {
@@ -18,7 +18,7 @@ local Constants = {
 	LOBBY_COOP_PORTAL_POS = Vector3.new(-15, 14, -256),
 	LOBBY_COOP_PORTAL_RADIUS = 5.5,
 	LOBBY_COOP_COUNTDOWN_SECONDS = 6,
-	LOBBY_SOUL_FONT_POS = Vector3.new(0, 14, -296),
+	LOBBY_SOUL_FONT_POS = Vector3.new(0, 14, -268),
 	ARENA_SPAWN = Vector3.new(0, 3, 0),
 	SPAWN_IMMUNE_SECONDS = 2,
 
@@ -86,7 +86,7 @@ local Constants = {
 	SEPARATION_STRENGTH = 0.5,
 	SPATIAL_CELL_SIZE = 8,
 
-	BOLT_OVERCHARGE_EVERY = 5,
+	BOLT_OVERCHARGE_EVERY = 4,
 	CLEAVE_MAELSTROM_EVERY = 4,
 	CINDER_GEYSER_EVERY = 4,
 	BOLT_LEAD_FACTOR = 0.65,
@@ -117,8 +117,8 @@ local Constants = {
 	GEM_MAGNET_SPEED = 55,
 
 	PROJECTILE_HEIGHT = 2.5,
-	BOLT_DAMAGE = 8,
-	BOLT_COOLDOWN = 0.9,
+	BOLT_DAMAGE = 12,
+	BOLT_COOLDOWN = 0.72,
 	BOLT_SPEED = 75,
 	BOLT_LIFETIME = 1.3,
 	BOLT_RANGE = 80,
@@ -128,7 +128,7 @@ local Constants = {
 	MIN_COOLDOWN_MULTIPLIER = 0.25,
 	MAX_PROJECTILES = 300,
 
-	ORB_DAMAGE = 6,
+	ORB_DAMAGE = 9,
 	ORB_RADIUS = 9,
 	ORB_SPEED = 2.4,
 	ORB_SIZE = 2,
@@ -147,8 +147,8 @@ local Constants = {
 	BONE_HIT_INTERVAL = 0.8,
 	BONE_KNOCKBACK = 14,
 
-	CINDER_DAMAGE = 10,
-	CINDER_DOT_DAMAGE = 2,
+	CINDER_DAMAGE = 14,
+	CINDER_DOT_DAMAGE = 3,
 	CINDER_DOT_TICKS = 3,
 	CINDER_COOLDOWN = 1.1,
 	CINDER_SPEED = 55,
@@ -156,7 +156,7 @@ local Constants = {
 	CINDER_SPLASH_RADIUS = 7,
 	CINDER_POOL_DURATION = 1.2,
 
-	CONSECRATED_DAMAGE = 4,
+	CONSECRATED_DAMAGE = 6,
 	CONSECRATED_INTERVAL = 0.5,
 	CONSECRATED_RADIUS = 12,
 	CONSECRATED_SLOW = 0.20,

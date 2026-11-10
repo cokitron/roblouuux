@@ -147,11 +147,14 @@ local function computeHealthMultiplier(elapsed: number, keystoneLevel: number): 
 	local kInfo = RpgConfig.getKeystoneInfo(keystoneLevel)
 	local timeMult = 1 + (elapsed / 65) + (elapsed / 150) ^ 1.65
 	local powerRatio = PlayerState.getMaxOffensivePowerRatio(elapsed)
-	local adaptiveMult = math.clamp(math.sqrt(math.max(1.0, powerRatio)), 1.0, 2.35)
+	local adaptiveMult = math.clamp(math.sqrt(math.max(1.0, powerRatio)), 1.0, 1.65)
 	return timeMult * adaptiveMult * kInfo.enemyMult
 end
 
 function Director.summonNextBoss(position: Vector3, keystoneLevel: number)
+	if EnemyService.count() >= Constants.MAX_ENEMIES then
+		return
+	end
 	local now = GameClock.now()
 	local elapsed = if roundStart then math.max(0, now - roundStart) else 60
 	local mult = computeHealthMultiplier(elapsed, keystoneLevel)
@@ -208,9 +211,11 @@ function Director.step(dt: number)
 	end
 	local healthMultiplier = computeHealthMultiplier(elapsed, maxKeystone)
 
-	-- Interactive Landmark Soul Brazier Shrines
-	Arena.stepShrines(dt, targets, function(shrine, capturer)
-		PlayerState.grantShrineBlessing(capturer.state)
+	-- Interactive Landmark Soul Brazier Shrines (co-op shared reward per LOOP-6)
+	Arena.stepShrines(dt, targets, function(shrine, _capturer)
+		for _, t in targets do
+			PlayerState.grantShrineBlessing(t.state)
+		end
 		Replication.queueShockwave(shrine.x, shrine.z, 18)
 		-- Summon Elite Shrine Guardian Pack around the ignited Brazier
 		if EnemyService.count() < Constants.MAX_ENEMIES then

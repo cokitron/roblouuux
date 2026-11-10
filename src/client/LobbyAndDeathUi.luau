@@ -5,7 +5,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SocialService = game:GetService("SocialService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
+local SoundController = require(script.Parent.SoundController)
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared:WaitForChild("Constants") :: ModuleScript)
 local Remotes = require(Shared:WaitForChild("Remotes") :: ModuleScript)
@@ -49,6 +51,11 @@ local function create(className: string, properties: { [string]: any }, parent: 
 	end
 	for key, value in properties do
 		(instance :: any)[key] = value
+	end
+	if className == "TextButton" then
+		(instance :: TextButton).Activated:Connect(function()
+			SoundController.play("UiClick")
+		end)
 	end
 	instance.Parent = parent
 	return instance
@@ -182,6 +189,19 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 		DisplayOrder = 15,
 	}, playerGui)
 
+	local uiScale = create("UIScale", { Scale = 1 }, gui)
+	local function updateUiScale()
+		local cam = Workspace.CurrentCamera
+		if cam then
+			local vp = cam.ViewportSize
+			uiScale.Scale = math.clamp(math.min(vp.X / 1060, vp.Y / 620), 0.55, 1.0)
+		end
+	end
+	updateUiScale()
+	if Workspace.CurrentCamera then
+		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUiScale)
+	end
+
 	-- =========================================================================
 	-- FLOATING WOW LOOT TOAST BANNER (Shows on Boss Kill / Vault Claim)
 	-- =========================================================================
@@ -223,6 +243,7 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 	}, lootToast)
 
 	local function showLootToast(item: GearItem)
+		SoundController.play("ReliquaryOpen")
 		local rInfo = RpgConfig.RARITY_INFO[item.rarity] or RpgConfig.RARITY_INFO[1]
 		lootToastStroke.Color = rInfo.color
 		lootToastTitle.Text = string.format("🎁 [%s] (iLvl %d)", item.name, item.ilvl)
@@ -1511,7 +1532,13 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 			return
 		end
 		local phase = player:GetAttribute("Phase")
-		if phase ~= "Lobby" and phase ~= "InRun" then
+		if input.KeyCode == Enum.KeyCode.H and (phase == "Lobby" or phase == "InRun") then
+			local nextState = not guideOverlay.Visible
+			closeAllModals()
+			guideOverlay.Visible = nextState
+			return
+		end
+		if phase ~= "Lobby" then
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.G then
@@ -1534,10 +1561,6 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 			local nextState = not shopOverlay.Visible
 			closeAllModals()
 			shopOverlay.Visible = nextState
-		elseif input.KeyCode == Enum.KeyCode.H then
-			local nextState = not guideOverlay.Visible
-			closeAllModals()
-			guideOverlay.Visible = nextState
 		elseif input.KeyCode == Enum.KeyCode.B then
 			local nextState = not grimoireOverlay.Visible
 			closeAllModals()

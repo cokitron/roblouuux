@@ -19,27 +19,27 @@ local GRAVEYARD_PLAYLIST: { TrackDef } = {
 	{
 		title = "Synthwave Drift I (Untitled)",
 		localAsset = "rbxasset://music/graveyard_1_untitled_1.mp3",
-		cloudAssetId = "",
+		cloudAssetId = "rbxassetid://1837849285",
 	},
 	{
 		title = "Synthwave Drift II (Untitled 1)",
 		localAsset = "rbxasset://music/graveyard_2_untitled_2.mp3",
-		cloudAssetId = "",
+		cloudAssetId = "rbxassetid://1848354536",
 	},
 	{
 		title = "Tres — Crypt Night Drive",
 		localAsset = "rbxasset://music/graveyard_3_tres.mp3",
-		cloudAssetId = "",
+		cloudAssetId = "rbxassetid://1837849082",
 	},
 	{
 		title = "Cuatro — Neon Graveyard",
 		localAsset = "rbxasset://music/graveyard_4_cuatro.mp3",
-		cloudAssetId = "",
+		cloudAssetId = "rbxassetid://1843404009",
 	},
 	{
 		title = "Coastal Cruise — Blood Moon",
 		localAsset = "rbxasset://music/graveyard_5_coastal_cruise.wav",
-		cloudAssetId = "",
+		cloudAssetId = "rbxassetid://1845756489",
 	},
 }
 
@@ -52,10 +52,10 @@ local FADE_INFO = TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirectio
 local MusicController = {}
 
 local function resolveSoundId(track: TrackDef): string
-	if track.cloudAssetId ~= "" then
-		return track.cloudAssetId
+	if track.localAsset ~= "" then
+		return track.localAsset
 	end
-	return track.localAsset
+	return track.cloudAssetId
 end
 
 function MusicController.mount(playerGui: PlayerGui)
@@ -116,8 +116,8 @@ function MusicController.mount(playerGui: PlayerGui)
 
 	local pill = Instance.new("Frame")
 	pill.Name = "SynthwaveRadioPill"
-	pill.AnchorPoint = Vector2.new(0, 1)
-	pill.Position = UDim2.new(0, 14, 1, -16)
+	pill.AnchorPoint = Vector2.new(1, 1)
+	pill.Position = UDim2.new(1, -14, 1, -16)
 	pill.Size = UDim2.fromOffset(310, 38)
 	pill.BackgroundColor3 = Color3.fromRGB(20, 14, 38)
 	pill.BackgroundTransparency = 0.08
@@ -233,6 +233,7 @@ function MusicController.mount(playerGui: PlayerGui)
 	local function playTrack(index: number)
 		currentTrackIndex = ((index - 1) % #GRAVEYARD_PLAYLIST) + 1
 		local track = GRAVEYARD_PLAYLIST[currentTrackIndex]
+		local requestedIdx = currentTrackIndex
 		activeSound:Stop()
 		activeSound.SoundId = resolveSoundId(track)
 		activeSound.TimePosition = 0
@@ -240,6 +241,23 @@ function MusicController.mount(playerGui: PlayerGui)
 		if isInGraveyard then
 			activeSound:Play()
 			tweenVolume(getTargetVolume())
+		end
+		-- Cloud fallback: if local rbxasset://music/ file is unavailable (published server), switch to cloudAssetId
+		if track.cloudAssetId ~= "" and activeSound.SoundId == track.localAsset then
+			task.delay(1.2, function()
+				if
+					currentTrackIndex == requestedIdx
+					and activeSound.SoundId == track.localAsset
+					and not activeSound.IsLoaded
+					and activeSound.TimeLength == 0
+				then
+					activeSound.SoundId = track.cloudAssetId
+					if isInGraveyard then
+						activeSound:Play()
+						tweenVolume(getTargetVolume())
+					end
+				end
+			end)
 		end
 		updateUi()
 	end

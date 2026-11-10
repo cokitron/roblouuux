@@ -397,6 +397,17 @@ function GraveyardBuildings.buildGothicMausoleum(): Model
 		})
 	end
 
+	-- Disable camera-blocking collision on overhead ribs, chandeliers, column shafts & walls
+	-- (perimeter collision is handled by invisible LobbyBoundaryWall parts; low steps/altar stay solid)
+	for _, inst in model:GetDescendants() do
+		if inst:IsA("BasePart") then
+			inst.CanQuery = false
+			if inst.Position.Y > 3.2 then
+				inst.CanCollide = false
+			end
+		end
+	end
+
 	return model
 end
 
@@ -604,6 +615,17 @@ function GraveyardBuildings.buildCatacombDescentPortal(): Model
 		flameLight.Brightness = 2.0
 		flameLight.Shadows = true
 		flameLight.Parent = soulFlame
+	end
+
+	-- Disable camera-blocking collision on overhead ribs, chandeliers, column shafts & walls
+	-- (perimeter collision is handled by invisible LobbyBoundaryWall parts; low steps/altar stay solid)
+	for _, inst in model:GetDescendants() do
+		if inst:IsA("BasePart") then
+			inst.CanQuery = false
+			if inst.Position.Y > 3.2 then
+				inst.CanCollide = false
+			end
+		end
 	end
 
 	return model
@@ -856,6 +878,17 @@ function GraveyardBuildings.buildMortuaryChapel(): Model
 		material = Enum.Material.CorrodedMetal,
 		parent = model,
 	})
+
+	-- Disable camera-blocking collision on overhead ribs, chandeliers, column shafts & walls
+	-- (perimeter collision is handled by invisible LobbyBoundaryWall parts; low steps/altar stay solid)
+	for _, inst in model:GetDescendants() do
+		if inst:IsA("BasePart") then
+			inst.CanQuery = false
+			if inst.Position.Y > 3.2 then
+				inst.CanCollide = false
+			end
+		end
+	end
 
 	return model
 end
@@ -1111,6 +1144,17 @@ function GraveyardBuildings.buildCaretakerLodge(): Model
 		material = Enum.Material.Slate,
 		parent = model,
 	})
+
+	-- Disable camera-blocking collision on overhead ribs, chandeliers, column shafts & walls
+	-- (perimeter collision is handled by invisible LobbyBoundaryWall parts; low steps/altar stay solid)
+	for _, inst in model:GetDescendants() do
+		if inst:IsA("BasePart") then
+			inst.CanQuery = false
+			if inst.Position.Y > 3.2 then
+				inst.CanCollide = false
+			end
+		end
+	end
 
 	return model
 end
@@ -1536,6 +1580,17 @@ function GraveyardBuildings.buildSanctuaryChapelInterior(): Model
 				material = Enum.Material.WoodPlanks,
 				parent = model,
 			})
+		end
+	end
+
+	-- Disable camera-blocking collision on overhead ribs, chandeliers, column shafts & walls
+	-- (perimeter collision is handled by invisible LobbyBoundaryWall parts; low steps/altar stay solid)
+	for _, inst in model:GetDescendants() do
+		if inst:IsA("BasePart") then
+			inst.CanQuery = false
+			if inst.Position.Y > 3.2 then
+				inst.CanCollide = false
+			end
 		end
 	end
 

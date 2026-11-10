@@ -41,16 +41,12 @@ local DEFINITIONS: { [string]: Definition } = {
 		radius = 1.1,
 		aiKind = "Flyer",
 		isFlyer = true,
-		ccKind = "Charm",
-		ccDuration = 1.15,
-		ccChance = 0.28,
-		ccRange = 3.2,
 	},
 	Spider = {
 		health = 34,
 		speed = 11.4,
 		damage = 8,
-		experience = 1,
+		experience = 2,
 		radius = 1.6,
 		aiKind = "Charger",
 		ccKind = "Snare",
@@ -62,7 +58,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 135,
 		speed = 6.4,
 		damage = 20,
-		experience = 3,
+		experience = 6,
 		radius = 3,
 		aiKind = "Pursuer",
 		ccKind = "Snare",
@@ -87,7 +83,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 44,
 		speed = 8.8,
 		damage = 10,
-		experience = 1,
+		experience = 2,
 		radius = 1.6,
 		aiKind = "Pursuer",
 		ccKind = "Snare",
@@ -95,12 +91,12 @@ local DEFINITIONS: { [string]: Definition } = {
 		ccChance = 0.78,
 		ccRange = 4.4,
 	},
-	InfernalImp = { health = 30, speed = 13.6, damage = 11, experience = 1, radius = 1.3, aiKind = "Skirmisher" },
+	InfernalImp = { health = 30, speed = 13.6, damage = 11, experience = 2, radius = 1.3, aiKind = "Skirmisher" },
 	FrostWyrm = {
 		health = 110,
 		speed = 10.2,
 		damage = 17,
-		experience = 3,
+		experience = 6,
 		radius = 2.2,
 		aiKind = "Flyer",
 		isFlyer = true,
@@ -114,7 +110,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 35,
 		speed = 14.2,
 		damage = 9,
-		experience = 1,
+		experience = 2,
 		radius = 1.5,
 		aiKind = "Charger",
 		ccKind = "Snare",
@@ -126,7 +122,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 42,
 		speed = 9.6,
 		damage = 12,
-		experience = 1,
+		experience = 3,
 		radius = 1.5,
 		aiKind = "Skirmisher",
 		ccKind = "Confuse",
@@ -138,7 +134,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 56,
 		speed = 8.2,
 		damage = 13,
-		experience = 2,
+		experience = 3,
 		radius = 1.6,
 		aiKind = "Skirmisher",
 		ccKind = "Charm",
@@ -150,7 +146,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 120,
 		speed = 7.8,
 		damage = 19,
-		experience = 3,
+		experience = 6,
 		radius = 2.2,
 		aiKind = "Charger",
 		ccKind = "Freeze",
@@ -162,7 +158,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 38,
 		speed = 12.8,
 		damage = 11,
-		experience = 1,
+		experience = 3,
 		radius = 1.5,
 		aiKind = "Flyer",
 		isFlyer = true,
@@ -175,7 +171,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 48,
 		speed = 11.6,
 		damage = 10,
-		experience = 1,
+		experience = 2,
 		radius = 1.4,
 		aiKind = "Pursuer",
 		ccKind = "Charm",
@@ -187,7 +183,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 380,
 		speed = 10.6,
 		damage = 20,
-		experience = 10,
+		experience = 35,
 		radius = 2.4,
 		aiKind = "Charger",
 		isBoss = true,
@@ -201,7 +197,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 560,
 		speed = 8.8,
 		damage = 26,
-		experience = 15,
+		experience = 60,
 		radius = 2.8,
 		aiKind = "Charger",
 		isBoss = true,
@@ -215,7 +211,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 780,
 		speed = 7.4,
 		damage = 32,
-		experience = 20,
+		experience = 90,
 		radius = 3.6,
 		aiKind = "Pursuer",
 		isBoss = true,
@@ -229,7 +225,7 @@ local DEFINITIONS: { [string]: Definition } = {
 		health = 1150,
 		speed = 8.0,
 		damage = 38,
-		experience = 35,
+		experience = 150,
 		radius = 3.5,
 		aiKind = "Skirmisher",
 		isBoss = true,
@@ -422,6 +418,12 @@ function EnemyService.damage(enemy: Enemy, amount: number, source: ServerTypes.S
 	local roundedDmg = math.max(1, math.floor(amount + 0.5))
 	Replication.queueHit(enemy.id, roundedDmg, critTier, enemy.x, enemy.z)
 
+	enemy.health -= amount
+	local died = enemy.health <= 0
+	if died then
+		enemy.dead = true
+	end
+
 	-- Shattering Crits synergy: critical strikes detonate an arcane pulse around the target
 	if critTier >= 1 and forceCritTier == nil and source and source.critNovaDamage > 0 then
 		local novaDmg = source.critNovaDamage * source.damageMultiplier
@@ -436,11 +438,9 @@ function EnemyService.damage(enemy: Enemy, amount: number, source: ServerTypes.S
 		end
 	end
 
-	enemy.health -= amount
-	if enemy.health > 0 then
+	if not died then
 		return
 	end
-	enemy.dead = true
 	Replication.queueKill(enemy.id)
 	GemService.spawn(Vector3.new(enemy.x, 0, enemy.z), enemy.experience)
 	if source then
@@ -457,8 +457,7 @@ function EnemyService.damage(enemy: Enemy, amount: number, source: ServerTypes.S
 	if enemy.isBoss then
 		Arena.spawnReliquaryChest(enemy.x, enemy.z, true)
 		local minRarity = if enemy.kind == "LichLord" then 4 else 3
-		for _, target in PlayerState.getTargets() do
-			local st = target.state
+		for _, st in PlayerState.getAllRunners() do
 			local p = st.player
 			local profile = DataService.getProfile(p)
 			if profile then
@@ -676,14 +675,14 @@ function EnemyService.step(dt: number)
 						speedMult = 2.05
 					end
 				elseif ai == "Skirmisher" then
-					-- Orbit tangentially when within 18 studs to surround the player
-					if dist < 18 then
+					-- Spiral inward tangentially when within 9 studs so Skirmishers & LichLord surround and engage the player
+					if dist < 9 then
 						local orbitSign = if enemy.id % 2 == 0 then 1 else -1
 						local perpX = -dirZ * orbitSign
 						local perpZ = dirX * orbitSign
-						local radialWeight = math.clamp((dist - 11) / 7, -0.35, 0.5)
-						dirX = dirX * radialWeight + perpX * 0.85
-						dirZ = dirZ * radialWeight + perpZ * 0.85
+						local radialWeight = math.clamp((dist - 3.2) / 5.5, 0.22, 0.65)
+						dirX = dirX * radialWeight + perpX * 0.72
+						dirZ = dirZ * radialWeight + perpZ * 0.72
 						local len = math.max(math.sqrt(dirX * dirX + dirZ * dirZ), 0.001)
 						dirX /= len
 						dirZ /= len

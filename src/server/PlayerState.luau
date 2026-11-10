@@ -679,7 +679,7 @@ function PlayerState.startRun(state: State, isCoopDeploy: boolean?): boolean
 	state.lastDamagedAt = -math.huge
 	state.dashReadyAt = 0
 	state.dashEndsAt = 0
-	state.bountyTarget = 20
+	state.bountyTarget = 12
 	state.bountyKills = 0
 	state.bountyExpiresClock = state.runStart + 45
 	state.nextBountyClock = state.runStart + 45
@@ -710,29 +710,35 @@ function PlayerState.unlockWeaponInRun(state: State, wId: string, isStarter: boo
 	local masteryDmgMult = 1 + (mastery - 1) * 0.03
 
 	if wId == "CryptCleaver" then
-		state.cleaveDamageMultiplier = bonuses.damageMult * masteryDmgMult
-		state.cleaveCooldownMultiplier = bonuses.cooldownMult
+		state.cleaveDamageMultiplier = masteryDmgMult
+		state.cleaveCooldownMultiplier = 1
 		state.cleavePierce = Constants.CLEAVE_BASE_PIERCE
 		state.boneCount = math.max(state.boneCount, if mastery >= 10 then 3 else 2)
-		state.boneDamageMultiplier = bonuses.damageMult * masteryDmgMult
+		state.boneDamageMultiplier = masteryDmgMult
 		if isStarter then
 			state.maxHealth += 35
 			state.health = state.maxHealth
 			state.armor += 2
 		end
 	elseif wId == "SoulflameLantern" then
-		state.cinderDamageMultiplier = bonuses.damageMult * masteryDmgMult
-		state.cinderCooldownMultiplier = bonuses.cooldownMult
+		state.cinderDamageMultiplier = masteryDmgMult
+		state.cinderCooldownMultiplier = 1
 		state.cinderClusterCount = math.max(state.cinderClusterCount, 1)
 		state.consecratedRadius =
 			math.max(state.consecratedRadius, Constants.CONSECRATED_RADIUS * (if mastery >= 10 then 1.15 else 1))
-		state.consecratedDamageMultiplier = bonuses.damageMult * masteryDmgMult
+		state.consecratedDamageMultiplier = masteryDmgMult
 		state.consecratedSlowMultiplier = math.max(state.consecratedSlowMultiplier, Constants.CONSECRATED_SLOW)
+		if isStarter then
+			state.maxHealth += 20
+			state.health = state.maxHealth
+			state.arcaneWardMax += 10
+			state.arcaneWardCurrent = state.arcaneWardMax
+		end
 	elseif wId == "PhantomBow" then
 		state.bowCount = math.max(state.bowCount, if mastery >= 10 then 3 else 2)
 		state.bowPierce = math.max(state.bowPierce, Constants.BOW_BASE_PIERCE)
-		state.bowDamageMultiplier = bonuses.damageMult * masteryDmgMult
-		state.bowCooldownMultiplier = bonuses.cooldownMult
+		state.bowDamageMultiplier = masteryDmgMult
+		state.bowCooldownMultiplier = 1
 		if isStarter then
 			state.critChance += 0.12
 			state.moveSpeedMultiplier += 0.10
@@ -742,8 +748,8 @@ function PlayerState.unlockWeaponInRun(state: State, wId: string, isStarter: boo
 	elseif wId == "HexlockPistols" then
 		state.pistolCount = math.max(state.pistolCount, if mastery >= 10 then 3 else 2)
 		state.pistolPierce = math.max(state.pistolPierce, 1)
-		state.pistolDamageMultiplier = bonuses.damageMult * masteryDmgMult
-		state.pistolCooldownMultiplier = bonuses.cooldownMult
+		state.pistolDamageMultiplier = masteryDmgMult
+		state.pistolCooldownMultiplier = 1
 		if isStarter then
 			state.critChance += 0.08
 			state.cooldownMultiplier = math.max(Constants.MIN_COOLDOWN_MULTIPLIER, state.cooldownMultiplier * 0.90)
@@ -752,8 +758,8 @@ function PlayerState.unlockWeaponInRun(state: State, wId: string, isStarter: boo
 		end
 	elseif wId == "StormcallerTome" then
 		state.stormChains = math.max(state.stormChains, Constants.STORM_CHAIN_COUNT + (if mastery >= 10 then 1 else 0))
-		state.stormDamageMultiplier = bonuses.damageMult * masteryDmgMult
-		state.stormCooldownMultiplier = bonuses.cooldownMult
+		state.stormDamageMultiplier = masteryDmgMult
+		state.stormCooldownMultiplier = 1
 		if isStarter then
 			state.pickupRadius *= 1.25
 			state.arcaneWardMax += 15
@@ -763,7 +769,7 @@ function PlayerState.unlockWeaponInRun(state: State, wId: string, isStarter: boo
 		state.damageMultiplier = bonuses.damageMult * masteryDmgMult
 		state.boltCount = math.max(state.boltCount, 1)
 		state.orbCount = math.max(state.orbCount, if mastery >= 10 then 2 else 1)
-		state.orbDamageMultiplier = bonuses.damageMult * masteryDmgMult
+		state.orbDamageMultiplier = masteryDmgMult
 		if isStarter then
 			state.arcaneWardMax += 15
 			state.arcaneWardCurrent = state.arcaneWardMax
@@ -927,7 +933,7 @@ function PlayerState.claimAllOffer(state: State): boolean
 	state.claimAllUsed += 1
 	state.offer = nil
 	state.pendingLevelUps = math.max(0, state.pendingLevelUps - 1)
-	state.nextOfferAllowedAt = os.clock() + 6.0
+	state.nextOfferAllowedAt = os.clock() + 1.5
 	for _, choice in ipairs(offer) do
 		Upgrades.apply(state, choice)
 		DataService.recordDiscovery(state.player, choice.id)
@@ -1073,6 +1079,16 @@ end
 
 function PlayerState.getTargets(): { Target }
 	return targets
+end
+
+function PlayerState.getAllRunners(): { State }
+	local list: { State } = {}
+	for _, state in states do
+		if state.phase == "InRun" or state.phase == "Downed" then
+			table.insert(list, state)
+		end
+	end
+	return list
 end
 
 function PlayerState.hasActiveRunners(): boolean
@@ -1231,7 +1247,7 @@ function PlayerState.getMaxOffensivePowerRatio(elapsed: number): number
 	for _, state in states do
 		if state.phase == "InRun" and state.alive then
 			local weapons = math.max(1, #state.equippedWeapons)
-			local weaponFactor = 1.0 + (weapons - 1) * 0.65
+			local weaponFactor = 1.0 + (weapons - 1) * 0.25
 			local evolutions = 0
 			for _, evoId in
 				{
@@ -1247,17 +1263,18 @@ function PlayerState.getMaxOffensivePowerRatio(elapsed: number): number
 					evolutions += 1
 				end
 			end
-			local maxDmgMult = math.max(
-				state.damageMultiplier,
+			local maxWeaponMult = math.max(
+				1.0,
 				state.cleaveDamageMultiplier,
 				state.cinderDamageMultiplier,
 				state.bowDamageMultiplier,
 				state.pistolDamageMultiplier,
 				state.stormDamageMultiplier
 			)
+			local maxDmgMult = state.damageMultiplier * maxWeaponMult
 			local hasteFactor = 1.0 / math.max(0.28, state.cooldownMultiplier)
 			local critFactor = 1.0 + state.critChance * (state.critMultiplier - 1.0) * 0.45
-			local rawPower = weaponFactor * maxDmgMult * hasteFactor * critFactor * (1.0 + evolutions * 0.35)
+			local rawPower = weaponFactor * maxDmgMult * hasteFactor * critFactor * (1.0 + evolutions * 0.22)
 			local ratio = rawPower / math.max(1.0, expectedPower)
 			if ratio > maxRatio then
 				maxRatio = ratio
@@ -1303,8 +1320,12 @@ function PlayerState.dash(state: State): boolean
 		local burstSpeed = Constants.PLAYER_WALK_SPEED * state.moveSpeedMultiplier * Constants.DASH_SPEED_MULT
 		root.AssemblyLinearVelocity = Vector3.new(dir.X * burstSpeed, root.AssemblyLinearVelocity.Y, dir.Z * burstSpeed)
 		if inRun then
+			local Arena = require(script.Parent.Arena)
 			local EnemyService = require(script.Parent.EnemyService)
 			EnemyService.shockwaveClear(root.Position, 10, 14 * state.damageMultiplier, 12, state)
+			Arena.damageUrnsInRadius(root.Position.X, root.Position.Z, 10, 25, function()
+				PlayerState.heal(state, 12)
+			end)
 		end
 	end
 
@@ -1342,7 +1363,8 @@ function PlayerState.addKill(state: State)
 			local pos = PlayerState.getPosition(state)
 			if pos then
 				local Arena = require(script.Parent.Arena)
-				Arena.spawnReliquaryChest(pos.X + 14, pos.Z, false)
+				local cx, cz = Arena.resolveObstacle(pos.X + 14, pos.Z, 2.5, 0, false)
+				Arena.spawnReliquaryChest(cx, cz, false)
 			end
 			state.player:SetAttribute(
 				"FieldEventBanner",
@@ -1385,7 +1407,7 @@ local function resolveOffer(state: State, slot: number): boolean
 	end
 	state.offer = nil
 	state.pendingLevelUps = math.max(0, state.pendingLevelUps - 1)
-	state.nextOfferAllowedAt = os.clock() + 8.0
+	state.nextOfferAllowedAt = os.clock() + 1.5
 	Upgrades.apply(state, choice)
 	DataService.recordDiscovery(state.player, choice.id)
 	applyHumanoidStats(state)

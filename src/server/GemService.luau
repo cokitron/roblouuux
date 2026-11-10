@@ -158,7 +158,15 @@ function GemService.step(dt: number)
 				local val = gem.value
 				table.remove(gems, i)
 				gem.model:Destroy()
-				PlayerState.addXp(nearest.state, val)
+				local count = #targets
+				if count > 1 then
+					local share = val * (0.75 + 0.25 / count)
+					for _, t in targets do
+						PlayerState.addXp(t.state, share)
+					end
+				else
+					PlayerState.addXp(nearest.state, val)
+				end
 			else
 				local step = math.min(dist, Constants.GEM_MAGNET_SPEED * dt)
 				gem.x += (nearest.position.X - gem.x) / dist * step

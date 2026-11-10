@@ -126,6 +126,19 @@ function Hud.mount(playerGui: PlayerGui)
 		DisplayOrder = 1,
 	}, playerGui)
 
+	local hudScale = create("UIScale", { Scale = 1 }, gui)
+	local function updateHudScale()
+		local cam = Workspace.CurrentCamera
+		if cam then
+			local vp = cam.ViewportSize
+			hudScale.Scale = math.clamp(math.min(vp.X / 1080, vp.Y / 640), 0.65, 1.0)
+		end
+	end
+	updateHudScale()
+	if Workspace.CurrentCamera then
+		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateHudScale)
+	end
+
 	-- Vibrant Rainbow-Cyan-to-Gold XP Bar at Top
 	local xpFill, xpLabel = createBar(gui, {
 		Name = "XpBar",
@@ -157,7 +170,7 @@ function Hud.mount(playerGui: PlayerGui)
 		Name = "BossBar",
 		AnchorPoint = Vector2.new(0.5, 0),
 		Size = UDim2.fromOffset(480, 32),
-		Position = UDim2.new(0.5, 0, 0, 96),
+		Position = UDim2.new(0.5, 0, 0, 118),
 		Visible = false,
 	}, Color3.fromRGB(255, 25, 75), Color3.fromRGB(255, 155, 0), Color3.fromRGB(255, 215, 0))
 
@@ -338,7 +351,7 @@ function Hud.mount(playerGui: PlayerGui)
 	local eventBanner = create("Frame", {
 		Name = "FieldEventBanner",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 134),
+		Position = UDim2.new(0.5, 0, 0, 158),
 		Size = UDim2.fromOffset(520, 36),
 		BackgroundColor3 = Color3.fromRGB(24, 18, 52),
 		BackgroundTransparency = 0.08,
@@ -428,7 +441,8 @@ function Hud.mount(playerGui: PlayerGui)
 		Text = "💀 KILLS: 0",
 	})
 
-	-- Exciting Tester Buttons (Summon Boss + Spawn Monster Pack)
+	-- Exciting Tester Buttons (Studio-only: Summon Boss + Spawn Monster Pack)
+	local isStudio = RunService:IsStudio()
 	local summonBossBtn = create("TextButton", {
 		Name = "SummonBossButton",
 		AnchorPoint = Vector2.new(1, 0),
@@ -441,6 +455,7 @@ function Hud.mount(playerGui: PlayerGui)
 		TextSize = 13,
 		TextColor3 = WHITE,
 		Text = "👹 SUMMON BOSS WAVE!",
+		Visible = isStudio,
 	}, gui)
 	create("UICorner", { CornerRadius = UDim.new(0, 10) }, summonBossBtn)
 	addGradient(summonBossBtn, Color3.fromRGB(145, 22, 95), Color3.fromRGB(78, 18, 152), 0)
@@ -463,6 +478,7 @@ function Hud.mount(playerGui: PlayerGui)
 		TextSize = 12,
 		TextColor3 = WHITE,
 		Text = "👾 SPAWN: 🟢 Plague Slime",
+		Visible = isStudio,
 	}, gui)
 	create("UICorner", { CornerRadius = UDim.new(0, 10) }, spawnPackBtn)
 	addGradient(spawnPackBtn, Color3.fromRGB(14, 125, 78), Color3.fromRGB(14, 88, 155), 0)

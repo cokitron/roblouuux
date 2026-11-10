@@ -875,7 +875,7 @@ function WorldRenderer.start()
 				local lob = newPart(
 					Enum.PartType.Ball,
 					Vector3.one * (if cin.overcharge then 2.2 else 1.6),
-					if cin.overcharge then Color3.fromRGB(130, 255, 225) else Color3.fromRGB(55, 235, 185),
+					if cin.overcharge then Color3.fromRGB(255, 195, 75) else Color3.fromRGB(255, 125, 45),
 					Enum.Material.Neon,
 					folder
 				)
@@ -892,7 +892,7 @@ function WorldRenderer.start()
 						local pillar = newPart(
 							Enum.PartType.Cylinder,
 							Vector3.new(16, cin.splashRadius * 0.85, cin.splashRadius * 0.85),
-							Color3.fromRGB(115, 255, 215),
+							Color3.fromRGB(255, 175, 65),
 							Enum.Material.Neon,
 							folder
 						)
@@ -909,7 +909,7 @@ function WorldRenderer.start()
 					local pool = newPart(
 						Enum.PartType.Cylinder,
 						Vector3.new(0.2, cin.splashRadius * 2, cin.splashRadius * 2),
-						if cin.overcharge then Color3.fromRGB(85, 250, 200) else Color3.fromRGB(45, 215, 165),
+						if cin.overcharge then Color3.fromRGB(255, 155, 55) else Color3.fromRGB(255, 105, 40),
 						Enum.Material.Neon,
 						folder
 					)
@@ -1310,7 +1310,7 @@ function WorldRenderer.start()
 					ring = newPart(
 						Enum.PartType.Cylinder,
 						Vector3.new(0.18, wantedRadius * 2, wantedRadius * 2),
-						Color3.fromRGB(55, 235, 195),
+						Color3.fromRGB(255, 215, 85),
 						Enum.Material.Neon,
 						folder
 					)

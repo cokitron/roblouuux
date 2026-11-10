@@ -232,10 +232,10 @@ local DEFINITIONS: { Definition } = {
 		end,
 	},
 
-	-- Branch C: Arcanist Thematic Defense & Survivability
+	-- Branch C: Universal & Arcanist Thematic Defense & Survivability
 	{
 		id = "arcane_ward",
-		tree = "ArcanistStaff",
+		tree = "Universal",
 		name = "Aether Barrier",
 		icon = "🛡️",
 		flavor = "Woven from unspent starlight.",
@@ -251,7 +251,7 @@ local DEFINITIONS: { Definition } = {
 	},
 	{
 		id = "arcane_drift",
-		tree = "ArcanistStaff",
+		tree = "Universal",
 		name = "Fleet Step",
 		icon = "👢",
 		flavor = "The forest floor forgets your steps.",
@@ -266,7 +266,7 @@ local DEFINITIONS: { Definition } = {
 	},
 	{
 		id = "arcane_regen",
-		tree = "ArcanistStaff",
+		tree = "Universal",
 		name = "Mystic Renewal",
 		icon = "🌿",
 		flavor = "Mana recirculates, closing every tear.",
@@ -463,10 +463,10 @@ local DEFINITIONS: { Definition } = {
 		end,
 	},
 
-	-- Branch C: Cleaver Thematic Defense & Survivability
+	-- Branch C: Universal & Cleaver Thematic Defense & Survivability
 	{
 		id = "cleaver_armor",
-		tree = "CryptCleaver",
+		tree = "Universal",
 		name = "Ossuary Plating",
 		icon = "🛡️",
 		flavor = "Borrowed from those who fell before.",
@@ -481,7 +481,7 @@ local DEFINITIONS: { Definition } = {
 	},
 	{
 		id = "cleaver_vampirism",
-		tree = "CryptCleaver",
+		tree = "Universal",
 		name = "Marrow Feast",
 		icon = "🦇",
 		flavor = "The night feeds those who hunt it.",
@@ -514,7 +514,7 @@ local DEFINITIONS: { Definition } = {
 	},
 	{
 		id = "cleaver_vitality",
-		tree = "CryptCleaver",
+		tree = "Universal",
 		name = "Colossus Frame",
 		icon = "❤️",
 		flavor = "A heart too stubborn to stop.",
@@ -718,7 +718,7 @@ local DEFINITIONS: { Definition } = {
 	},
 	{
 		id = "lantern_magnet",
-		tree = "SoulflameLantern",
+		tree = "Universal",
 		name = "Soul Beacon",
 		icon = "🧲",
 		flavor = "Spirits drawn to the light like moths.",
@@ -733,7 +733,7 @@ local DEFINITIONS: { Definition } = {
 	},
 	{
 		id = "lantern_purge",
-		tree = "SoulflameLantern",
+		tree = "Universal",
 		name = "Retributive Flare",
 		icon = "💥",
 		flavor = "Strike the lantern, taste the flame.",
@@ -1372,7 +1372,10 @@ function Upgrades.roll(state: State, count: number): { OfferSlot }
 	local slots: { OfferSlot } = {}
 	while #slots < count and #pool > 0 do
 		local index = rng:NextInteger(1, #pool)
-		table.insert(slots, { id = pool[index].id, tier = rollTier(state) })
+		local picked = pool[index]
+		local isEvo = string.sub(picked.id, 1, 7) == "evolve_"
+		local tier = if isEvo then 4 else rollTier(state)
+		table.insert(slots, { id = picked.id, tier = tier })
 		table.remove(pool, index)
 	end
 	if #slots == 0 then

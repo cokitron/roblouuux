@@ -113,14 +113,20 @@ sessionAction.OnServerEvent:Connect(function(player: Player, action: unknown, pa
 	elseif action == "ClaimAllOffer" then
 		MonetizationService.requestClaimAll(state)
 	elseif action == "SummonBoss" then
-		if state.phase == "InRun" and state.alive then
+		if RunService:IsStudio() and state.phase == "InRun" and state.alive then
 			local pos = PlayerState.getPosition(state) or Vector3.new(0, 0, 0)
 			local profile = DataService.getProfile(player)
 			local kLvl = if profile then profile.selectedKeystone else 0
 			Director.summonNextBoss(pos, kLvl)
 		end
 	elseif action == "SummonMonster" then
-		if state.phase == "InRun" and state.alive and typeof(payload) == "string" and #payload <= 32 then
+		if
+			RunService:IsStudio()
+			and state.phase == "InRun"
+			and state.alive
+			and typeof(payload) == "string"
+			and #payload <= 32
+		then
 			local pos = PlayerState.getPosition(state) or Vector3.new(0, 0, 0)
 			local profile = DataService.getProfile(player)
 			local kLvl = if profile then profile.selectedKeystone else 0

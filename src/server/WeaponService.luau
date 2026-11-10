@@ -244,6 +244,9 @@ local function updateOrbs(state: State, position: Vector3)
 		local angle = baseAngle + (index - 1) * math.pi * 2 / orbCount
 		local ox = position.X + math.cos(angle) * orbRadius
 		local oz = position.Z + math.sin(angle) * orbRadius
+		Arena.damageUrnsInRadius(ox, oz, Constants.ORB_HIT_RADIUS + 1.2, damage, function(ux, uz)
+			onUrnShattered(ux, uz, state)
+		end)
 
 		for _, enemy in enemies do
 			if not enemy.dead then
@@ -346,7 +349,8 @@ local function updateCleave(state: State, weapons: PlayerWeapons, position: Vect
 	for i = 1, hitLimit do
 		local c = candidates[i]
 		local enemy = c.enemy
-		if state.cleaveExecuteThreshold > 0 and (enemy.health <= 40 * state.cleaveExecuteThreshold) then
+		local execThreshold = if enemy.isBoss then state.cleaveExecuteThreshold * 0.25 else state.cleaveExecuteThreshold
+		if execThreshold > 0 and enemy.health <= enemy.maxHealth * execThreshold then
 			EnemyService.damage(enemy, enemy.health + 100, state, 2)
 		else
 			EnemyService.damage(enemy, damage, state)
@@ -381,6 +385,9 @@ local function updateBoneWhirlwind(state: State, position: Vector3)
 		local angle = baseAngle + (index - 1) * math.pi * 2 / boneCount
 		local bx = position.X + math.cos(angle) * radius
 		local bz = position.Z + math.sin(angle) * radius
+		Arena.damageUrnsInRadius(bx, bz, 2.2, damage, function(ux, uz)
+			onUrnShattered(ux, uz, state)
+		end)
 
 		for _, enemy in enemies do
 			if not enemy.dead then
@@ -526,6 +533,9 @@ local function updateConsecratedGround(state: State, weapons: PlayerWeapons, pos
 	if weapons.consecratedTimer <= 0 then
 		weapons.consecratedTimer = Constants.CONSECRATED_INTERVAL
 		local damage = Constants.CONSECRATED_DAMAGE * state.damageMultiplier * state.consecratedDamageMultiplier
+		Arena.damageUrnsInRadius(position.X, position.Z, radius, damage, function(ux, uz)
+			onUrnShattered(ux, uz, state)
+		end)
 		for _, enemy in enemies do
 			if not enemy.dead then
 				local dx = enemy.x - position.X
@@ -756,6 +766,9 @@ local function updateStorm(state: State, weapons: PlayerWeapons, position: Vecto
 		end
 		hitSet[curr] = true
 		Replication.queueLightning(prevX, prevZ, curr.x, curr.z, isOvercharge and bounce == 1)
+		Arena.damageUrnsInRadius(curr.x, curr.z, 6, damage, function(ux, uz)
+			onUrnShattered(ux, uz, state)
+		end)
 		EnemyService.damage(curr, damage, state)
 
 		if isOvercharge and bounce == 1 then
@@ -802,12 +815,26 @@ local function updateFlamePools()
 		elseif now >= pool.nextTick then
 			pool.nextTick = now + 0.35
 			local radSq = pool.radius * pool.radius
+			local incinRad = pool.owner.cinderIncinerateRadius
+			local incinSq = incinRad * incinRad
 			for _, enemy in enemies do
 				if not enemy.dead then
 					local dx = enemy.x - pool.x
 					local dz = enemy.z - pool.z
 					if dx * dx + dz * dz <= radSq then
 						EnemyService.damage(enemy, pool.damagePerTick, pool.owner)
+						if incinRad > 0 then
+							local splashDmg = pool.damagePerTick * 0.5
+							for _, other in enemies do
+								if not other.dead and other ~= enemy then
+									local odx = other.x - enemy.x
+									local odz = other.z - enemy.z
+									if odx * odx + odz * odz <= incinSq then
+										EnemyService.damage(other, splashDmg, pool.owner, 0)
+									end
+								end
+							end
+						end
 					end
 				end
 			end
