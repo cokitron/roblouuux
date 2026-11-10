@@ -592,10 +592,15 @@ function LevelUpUi.mount(playerGui: PlayerGui)
 			and awaitingSince == nil
 			and player:GetAttribute("Dead") ~= true
 		if picker.Visible then
-			local seconds = math.max(0, math.ceil(deadline - os.clock()))
-			if seconds ~= shownSeconds then
-				shownSeconds = seconds
-				countdown.Text = string.format("Choose a Talent Card  ·  auto-pick in %ds", seconds)
+			if #Players:GetPlayers() > 1 then
+				local seconds = math.max(0, math.ceil(deadline - os.clock()))
+				if seconds ~= shownSeconds then
+					shownSeconds = seconds
+					countdown.Text = string.format("Choose a Talent Card  ·  auto-pick in %ds", seconds)
+				end
+			elseif shownSeconds ~= -2 then
+				shownSeconds = -2
+				countdown.Text = "Choose a Talent Card  ·  Click or Press [1] [2] [3]"
 			end
 		end
 	end)

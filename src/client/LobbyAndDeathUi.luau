@@ -2209,7 +2209,7 @@ function LobbyAndDeathUi.mount(playerGui: PlayerGui)
 					ui.cat.TextColor3 = TEXT_GREEN
 					ui.cat.Text = string.format("✅ %s (+0.5%% DMG, +1 HP)", string.upper(entry.category))
 					ui.lore.TextColor3 = TEXT_WHITE
-					ui.lore.Text = entry.lore
+					ui.lore.Text = entry.hint
 				else
 					ui.stroke.Color = BTN_SLATE
 					ui.title.TextColor3 = TEXT_MUTED

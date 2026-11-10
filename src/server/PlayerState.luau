@@ -41,8 +41,8 @@ local PlayerState = {}
 local function syncLeaderstatsAndPrestigeTag(state: State)
 	local player = state.player
 	local profile = DataService.getProfile(player)
-	local heroLv = if profile then profile.heroLevel else 1
-	local bestMPlus = if profile then profile.highestKeystoneCleared else 0
+	local heroLv = if profile and typeof(profile.heroLevel) == "number" then profile.heroLevel else 1
+	local bestMPlus = if profile and typeof(profile.highestKeystone) == "number" then profile.highestKeystone else 0
 
 	local ls = player:FindFirstChild("leaderstats")
 	if not ls then
@@ -1398,6 +1398,18 @@ end
 
 function PlayerState.chooseUpgrade(state: State, seq: number, slot: number): boolean
 	if seq ~= state.offerSeq then
+		if state.offer ~= nil and state.phase == "InRun" and state.alive then
+			local timeout = if state.afk then Constants.AFK_OFFER_TIMEOUT_SECONDS else Constants.OFFER_TIMEOUT_SECONDS
+			local payload: Types.LevelUpPayload = {
+				seq = state.offerSeq,
+				timeout = timeout,
+				offers = Upgrades.describe(state, state.offer),
+			}
+			levelUpOffer:FireClient(state.player, payload)
+		else
+			local close: Types.LevelUpPayload = { seq = state.offerSeq, timeout = 0, offers = {} }
+			levelUpOffer:FireClient(state.player, close)
+		end
 		return false
 	end
 	state.afk = false
@@ -1406,9 +1418,10 @@ end
 
 function PlayerState.expireOffers()
 	local now = os.clock()
+	local isMultiplayer = #Players:GetPlayers() > 1
 	for _, state in states do
 		local offer = state.offer
-		if offer and now >= state.offerExpiresAt then
+		if isMultiplayer and offer and now >= state.offerExpiresAt then
 			state.afk = true
 			resolveOffer(state, rng:NextInteger(1, #offer))
 		end
@@ -1652,8 +1665,8 @@ function PlayerState.step(dt: number)
 		local killEntries: { { name: string, kills: number, souls: number } } = {}
 		for _, st in states do
 			local prof = DataService.getProfile(st.player)
-			local lv = if prof then prof.heroLevel else 1
-			local mp = if prof then prof.highestKeystoneCleared else 0
+			local lv = if prof and typeof(prof.heroLevel) == "number" then prof.heroLevel else 1
+			local mp = if prof and typeof(prof.highestKeystone) == "number" then prof.highestKeystone else 0
 			table.insert(heroEntries, { name = st.player.DisplayName, lv = lv, mp = mp })
 			table.insert(killEntries, { name = st.player.DisplayName, kills = st.bestKills, souls = st.souls })
 		end

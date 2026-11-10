@@ -155,9 +155,10 @@ function GemService.step(dt: number)
 		if nearest and nearestDistSq <= nearest.state.pickupRadius ^ 2 then
 			local dist = math.sqrt(nearestDistSq)
 			if dist <= Constants.GEM_COLLECT_DISTANCE then
-				PlayerState.addXp(nearest.state, gem.value)
-				gem.model:Destroy()
+				local val = gem.value
 				table.remove(gems, i)
+				gem.model:Destroy()
+				PlayerState.addXp(nearest.state, val)
 			else
 				local step = math.min(dist, Constants.GEM_MAGNET_SPEED * dt)
 				gem.x += (nearest.position.X - gem.x) / dist * step
