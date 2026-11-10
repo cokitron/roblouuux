@@ -406,34 +406,37 @@ function Hud.mount(playerGui: PlayerGui)
 		Text = "",
 	})
 
-	-- Ergonomic Right-Thumb Spectral Dash Button (Anchored at bottom-right above Jump / Radio Pill)
+	-- Ergonomic Right-Thumb Circular Spectral Dash Button (Anchored at bottom-right thumb arc)
 	local dashBtn = create("TextButton", {
 		Name = "DashButton",
 		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -16, 1, -92),
-		Size = UDim2.fromOffset(116, 36),
+		Position = UDim2.new(1, -24, 1, -88),
+		Size = UDim2.fromOffset(72, 72),
 		BackgroundColor3 = PANEL,
+		BackgroundTransparency = 0.08,
 		BorderSizePixel = 0,
 		AutoButtonColor = true,
 		Text = "",
 	}, gui)
-	attachClusterScale(dashBtn, 960, 540, 0.72)
-	create("UICorner", { CornerRadius = UDim.new(0, 9) }, dashBtn)
-	local dashStroke = create("UIStroke", { Color = Color3.fromRGB(85, 240, 255), Thickness = 1.8 }, dashBtn)
+	attachClusterScale(dashBtn, 960, 540, 0.78)
+	create("UICorner", { CornerRadius = UDim.new(1, 0) }, dashBtn)
+	local dashStroke = create("UIStroke", { Color = Color3.fromRGB(85, 240, 255), Thickness = 2.6 }, dashBtn)
 	local dashFill = create("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = WHITE,
 		BorderSizePixel = 0,
 	}, dashBtn)
-	create("UICorner", { CornerRadius = UDim.new(0, 9) }, dashFill)
-	addGradient(dashFill, Color3.fromRGB(16, 115, 165), Color3.fromRGB(48, 38, 135), 0)
+	create("UICorner", { CornerRadius = UDim.new(1, 0) }, dashFill)
+	addGradient(dashFill, Color3.fromRGB(16, 128, 185), Color3.fromRGB(58, 38, 155), 45)
 	local dashLabel = createLabel(dashBtn, {
 		Size = UDim2.fromScale(1, 1),
 		ZIndex = 2,
 		Font = Enum.Font.GothamBlack,
-		TextSize = 11,
+		TextSize = 12,
 		TextColor3 = WHITE,
-		Text = "💨 DASH [Space]",
+		Text = "💨\nDASH",
 	})
 
 	local function triggerDash()
@@ -764,13 +767,13 @@ function Hud.mount(playerGui: PlayerGui)
 			dashFill.Size = UDim2.fromScale(1, 1)
 			dashStroke.Color = Color3.fromRGB(85, 240, 255)
 			dashLabel.TextColor3 = Color3.fromRGB(220, 255, 250)
-			dashLabel.Text = "💨 DASH [Space]"
+			dashLabel.Text = "💨\nDASH"
 		else
 			local pct = math.clamp(1 - (dashRem / Constants.DASH_COOLDOWN), 0, 1)
-			dashFill.Size = UDim2.fromScale(pct, 1)
+			dashFill.Size = UDim2.fromScale(pct, pct)
 			dashStroke.Color = Color3.fromRGB(95, 105, 145)
 			dashLabel.TextColor3 = Color3.fromRGB(195, 205, 225)
-			dashLabel.Text = string.format("⏳ DASH %.1fs", dashRem)
+			dashLabel.Text = string.format("⏳\n%.1fs", dashRem)
 		end
 
 		local seconds = math.max(0, math.floor(gameNow - runStart))
