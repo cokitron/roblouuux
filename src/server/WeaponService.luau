@@ -101,8 +101,7 @@ local function getWeapons(player: Player): PlayerWeapons
 end
 
 local function onUrnShattered(ux: number, uz: number, state: State)
-	GemService.spawn(Vector3.new(ux + 1.2, 0, uz), 2)
-	GemService.spawn(Vector3.new(ux - 1.2, 0, uz), 2)
+	GemService.spawn(Vector3.new(ux, 0, uz), 1)
 	state.health = math.min(state.maxHealth, state.health + 8)
 	state.player:SetAttribute("Health", math.ceil(state.health))
 	Replication.queueShockwave(ux, uz, 6)

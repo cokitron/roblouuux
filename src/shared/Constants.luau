@@ -1,7 +1,7 @@
 --!strict
 
 local function xpForLevel(level: number): number
-	return math.floor(4 + level * 3 + level ^ 1.4)
+	return math.floor(8 + (level - 1) * 12 + (level - 1) ^ 1.75 * 4)
 end
 
 local Constants = {
@@ -64,8 +64,8 @@ local Constants = {
 
 	OFFER_COUNT = 3,
 	MAX_OFFER_COUNT = 4,
-	OFFER_TIMEOUT_SECONDS = 20,
-	AFK_OFFER_TIMEOUT_SECONDS = 5,
+	OFFER_TIMEOUT_SECONDS = 45,
+	AFK_OFFER_TIMEOUT_SECONDS = 15,
 	RESUME_GRACE_SECONDS = 1,
 
 	MAX_ENEMIES = 150,

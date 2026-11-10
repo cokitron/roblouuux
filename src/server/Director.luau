@@ -49,9 +49,11 @@ local MID_ELITE_MONSTERS = {
 local Director = {}
 
 local function pickKind(elapsed: number): string
-	local eliteChance = math.min(0.14 + elapsed / 450, 0.42)
-	if rng:NextNumber() < eliteChance then
-		return MID_ELITE_MONSTERS[rng:NextInteger(1, #MID_ELITE_MONSTERS)]
+	if elapsed >= 45 then
+		local eliteChance = math.min(0.10 + (elapsed - 45) / 450, 0.42)
+		if rng:NextNumber() < eliteChance then
+			return MID_ELITE_MONSTERS[rng:NextInteger(1, #MID_ELITE_MONSTERS)]
+		end
 	end
 	return EARLY_MONSTERS[rng:NextInteger(1, #EARLY_MONSTERS)]
 end

@@ -140,10 +140,7 @@ function MonetizationService.requestReroll(state: ServerTypes.State): boolean
 		end)
 		return true
 	end
-	if RunService:IsStudio() then
-		return PlayerState.rerollOffer(state, true)
-	end
-	return false
+	return PlayerState.rerollOffer(state, true)
 end
 
 function MonetizationService.requestClaimAll(state: ServerTypes.State): boolean
@@ -159,10 +156,7 @@ function MonetizationService.requestClaimAll(state: ServerTypes.State): boolean
 		end)
 		return true
 	end
-	if RunService:IsStudio() then
-		return PlayerState.claimAllOffer(state)
-	end
-	return false
+	return PlayerState.claimAllOffer(state)
 end
 
 function MonetizationService.requestBloodMoon(player: Player): boolean

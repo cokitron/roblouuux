@@ -473,6 +473,7 @@ function PlayerState.reset(player: Player, character: Model): State
 		offer = nil,
 		offerSeq = if previous then previous.offerSeq else 0,
 		offerExpiresAt = 0,
+		nextOfferAllowedAt = 0,
 		afk = false,
 		immuneUntil = 0,
 		pendingLevelUps = 0,
@@ -657,6 +658,7 @@ function PlayerState.startRun(state: State, isCoopDeploy: boolean?): boolean
 	table.clear(state.upgrades)
 	state.offer = nil
 	state.pendingLevelUps = 0
+	state.nextOfferAllowedAt = 0
 	state.afk = false
 	state.revivesUsed = 0
 	state.downedExpiresAt = 0
@@ -666,10 +668,10 @@ function PlayerState.startRun(state: State, isCoopDeploy: boolean?): boolean
 	state.lastDamagedAt = -math.huge
 	state.dashReadyAt = 0
 	state.dashEndsAt = 0
-	state.bountyTarget = 12
+	state.bountyTarget = 20
 	state.bountyKills = 0
-	state.bountyExpiresClock = state.runStart + 40
-	state.nextBountyClock = state.runStart + 40
+	state.bountyExpiresClock = state.runStart + 45
+	state.nextBountyClock = state.runStart + 45
 	state.ccKind = ""
 	state.ccExpiresAt = 0
 	state.ccExpiresClock = 0
@@ -914,12 +916,15 @@ function PlayerState.claimAllOffer(state: State): boolean
 	state.claimAllUsed += 1
 	state.offer = nil
 	state.pendingLevelUps = math.max(0, state.pendingLevelUps - 1)
+	state.nextOfferAllowedAt = os.clock() + 6.0
 	for _, choice in ipairs(offer) do
 		Upgrades.apply(state, choice)
 		DataService.recordDiscovery(state.player, choice.id)
 	end
 	applyHumanoidStats(state)
-	sendNextOffer(state)
+	state.offerSeq += 1
+	local close: Types.LevelUpPayload = { seq = state.offerSeq, timeout = 0, offers = {} }
+	levelUpOffer:FireClient(state.player, close)
 	DataService.sync(state.player)
 	publish(state)
 	return true
@@ -1146,22 +1151,20 @@ function PlayerState.grantReliquaryChest(state: State, isBossChest: boolean)
 		DataService.sync(state.player)
 	end
 	state.health = math.min(state.maxHealth, state.health + 35)
-	if isBossChest then
+	state.arcaneWardMax += 20
+	state.arcaneWardCurrent = math.min(state.arcaneWardMax, state.arcaneWardCurrent + 20)
+	if isBossChest or state.rerollDice < 3 then
 		state.rerollDice += 1
 	end
-	local xpGrant = math.max(4, math.ceil(Constants.xpForLevel(state.level) * (if isBossChest then 0.85 else 0.45)))
-	PlayerState.addXp(state, xpGrant)
 	local bannerText = if isBossChest
 		then string.format(
-			"👑 BOSS RELIQUARY CLAIMED! +%d Souls • +1 Bonus Roll Coin • +%d XP Surge! (%d)",
+			"👑 BOSS RELIQUARY CLAIMED! +%d Souls • +1 Bonus Roll Coin • +20 Ward! (%d)",
 			soulsBonus,
-			xpGrant,
 			math.floor(os.clock() * 10)
 		)
 		else string.format(
-			"🎁 CRYPT RELIQUARY OPENED! +%d Souls • +35 HP Heal • +%d XP Surge! (%d)",
+			"🎁 CRYPT RELIQUARY OPENED! +%d Souls • +35 HP Heal • +20 Ward! (%d)",
 			soulsBonus,
-			xpGrant,
 			math.floor(os.clock() * 10)
 		)
 	state.player:SetAttribute("FieldEventBanner", bannerText)
@@ -1325,12 +1328,10 @@ function PlayerState.addKill(state: State)
 				DataService.sync(state.player)
 			end
 			state.rerollDice += 1
-			local xpGrant = math.max(4, math.ceil(Constants.xpForLevel(state.level) * 0.45))
-			PlayerState.addXp(state, xpGrant)
 			local pos = PlayerState.getPosition(state)
 			if pos then
 				local Arena = require(script.Parent.Arena)
-				Arena.spawnReliquaryChest(pos.X + 7, pos.Z, false)
+				Arena.spawnReliquaryChest(pos.X + 14, pos.Z, false)
 			end
 			state.player:SetAttribute(
 				"FieldEventBanner",
@@ -1350,15 +1351,16 @@ function PlayerState.addXp(state: State, amount: number)
 	if state.phase ~= "InRun" or not state.alive then
 		return
 	end
-	state.xp += amount * state.xpMultiplier
 	local needed = Constants.xpForLevel(state.level)
+	local gained = math.min(needed, amount * state.xpMultiplier)
+	state.xp += gained
 	while state.xp >= needed do
 		state.xp -= needed
 		state.level += 1
 		state.pendingLevelUps += 1
 		needed = Constants.xpForLevel(state.level)
 	end
-	if state.pendingLevelUps > 0 and state.offer == nil then
+	if state.pendingLevelUps > 0 and state.offer == nil and os.clock() >= state.nextOfferAllowedAt then
 		sendNextOffer(state)
 	end
 	publish(state)
@@ -1371,11 +1373,14 @@ local function resolveOffer(state: State, slot: number): boolean
 		return false
 	end
 	state.offer = nil
-	state.pendingLevelUps -= 1
+	state.pendingLevelUps = math.max(0, state.pendingLevelUps - 1)
+	state.nextOfferAllowedAt = os.clock() + 6.0
 	Upgrades.apply(state, choice)
 	DataService.recordDiscovery(state.player, choice.id)
 	applyHumanoidStats(state)
-	sendNextOffer(state)
+	state.offerSeq += 1
+	local close: Types.LevelUpPayload = { seq = state.offerSeq, timeout = 0, offers = {} }
+	levelUpOffer:FireClient(state.player, close)
 	publish(state)
 	return true
 end
@@ -1411,18 +1416,22 @@ end
 
 function PlayerState.anyOfferOpen(): boolean
 	local anyDowned = false
-	local anyLivingInRun = false
+	local livingCount = 0
 	for _, state in states do
 		if state.phase == "InRun" and state.alive then
-			anyLivingInRun = true
-			if not state.afk and state.offer ~= nil then
-				return true
-			end
+			livingCount += 1
 		elseif state.phase == "Downed" then
 			anyDowned = true
 		end
 	end
-	if anyDowned and not anyLivingInRun then
+	for _, state in states do
+		if state.phase == "InRun" and state.alive and state.offer ~= nil then
+			if livingCount <= 1 or not state.afk then
+				return true
+			end
+		end
+	end
+	if anyDowned and livingCount == 0 then
 		return true
 	end
 	return false
@@ -1430,7 +1439,8 @@ end
 
 function PlayerState.setFrozen(value: boolean)
 	frozen = value
-	local graceUntil = os.clock() + Constants.RESUME_GRACE_SECONDS
+	local now = os.clock()
+	local graceUntil = now + Constants.RESUME_GRACE_SECONDS
 	for _, state in states do
 		if state.phase == "InRun" then
 			local root = getRoot(state)
@@ -1438,10 +1448,12 @@ function PlayerState.setFrozen(value: boolean)
 				root.Anchored = value
 				if not value then
 					pcall(root.SetNetworkOwner, root, state.player)
+					state.lastValidPosition = root.Position
 				end
 			end
 			if not value then
 				state.immuneUntil = graceUntil
+				state.moveCheckedAt = now
 			end
 		end
 	end
@@ -1523,6 +1535,10 @@ function PlayerState.step(dt: number)
 		elseif state.phase == "InRun" and state.alive then
 			local needPublish = false
 			local gameNow = GameClock.now()
+			if state.pendingLevelUps > 0 and state.offer == nil and os.clock() >= state.nextOfferAllowedAt then
+				sendNextOffer(state)
+				needPublish = true
+			end
 			if state.bountyTarget > 0 and gameNow >= state.bountyExpiresClock then
 				state.bountyTarget = 0
 				state.bountyKills = 0

@@ -85,6 +85,7 @@ export type State = {
 	offer: { OfferSlot }?,
 	offerSeq: number,
 	offerExpiresAt: number,
+	nextOfferAllowedAt: number,
 	afk: boolean,
 	immuneUntil: number,
 	pendingLevelUps: number,
