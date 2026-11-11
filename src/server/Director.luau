@@ -71,11 +71,48 @@ end
 
 local resetRound = Director.resetRound
 
+local LEGION_COHORT_SIZE = 8
+
 local function clampAndResolveSpawn(x: number, z: number): (number, number)
 	local limit = Constants.ARENA_HALF_SIZE - 4
 	local cx = math.clamp(x, -limit, limit)
 	local cz = math.clamp(z, -limit, limit)
 	return Arena.resolveObstacle(cx, cz, 2.0, 1, false)
+end
+
+-- Deploys a disciplined 8-unit Crypt Legionnaire Contubernium (2 ranks of 4 side-by-side) facing targetPos
+local function spawnLegionnaireCohort(
+	ax: number,
+	az: number,
+	targetPos: Vector3,
+	healthMultiplier: number,
+	emergeEffect: boolean?
+): number
+	local dx = targetPos.X - ax
+	local dz = targetPos.Z - az
+	local len = math.max(math.sqrt(dx * dx + dz * dz), 0.01)
+	local fwdX = dx / len
+	local fwdZ = dz / len
+	local perpX = -fwdZ
+	local perpZ = fwdX
+
+	local spawned = 0
+	for rank = 1, 2 do
+		local alongOffset = if rank == 1 then 1.55 else -1.55
+		local stagger = if rank == 2 then 0.45 else 0
+		for col = 1, 4 do
+			local latOffset = (col - 2.5) * 3.1 + stagger
+			local wx = ax + fwdX * alongOffset + perpX * latOffset
+			local wz = az + fwdZ * alongOffset + perpZ * latOffset
+			local sx, sz = clampAndResolveSpawn(wx, wz)
+			if emergeEffect and rank == 1 and (col == 2 or col == 3) then
+				Replication.queueEmergence(sx, sz)
+			end
+			EnemyService.spawn("Skeleton", Vector3.new(sx, 0, sz), healthMultiplier)
+			spawned += 1
+		end
+	end
+	return spawned
 end
 
 -- Spawns coordinated tactical wave formations (Bone Phalanx, Nightwing Swoop, Crypt Encirclement)
@@ -92,17 +129,12 @@ local function spawnFormation(target: PlayerState.Target, healthMultiplier: numb
 	end
 
 	if formType == 1 then
-		-- 1. Bone Phalanx: Crescent shield-wall arc ahead of player's heading + 1 DeathKnight captain
-		for i = -2, 2 do
-			if EnemyService.count() >= Constants.MAX_ENEMIES then
-				break
-			end
-			local a = baseAngle + i * math.rad(16)
-			local sx, sz = clampAndResolveSpawn(pos.X + math.cos(a) * 42, pos.Z + math.sin(a) * 42)
-			EnemyService.spawn("Skeleton", Vector3.new(sx, 0, sz), healthMultiplier)
-		end
+		-- 1. Bone Phalanx: 8-unit Crypt Legionnaire cohort ahead of player's heading + 1 DeathKnight captain
+		local ax = pos.X + math.cos(baseAngle) * 42
+		local az = pos.Z + math.sin(baseAngle) * 42
+		spawnLegionnaireCohort(ax, az, pos, healthMultiplier, false)
 		if EnemyService.count() < Constants.MAX_ENEMIES then
-			local cx, cz = clampAndResolveSpawn(pos.X + math.cos(baseAngle) * 46, pos.Z + math.sin(baseAngle) * 46)
+			local cx, cz = clampAndResolveSpawn(pos.X + math.cos(baseAngle) * 47, pos.Z + math.sin(baseAngle) * 47)
 			EnemyService.spawn("DeathKnight", Vector3.new(cx, 0, cz), healthMultiplier)
 		end
 	elseif formType == 2 then
@@ -177,22 +209,13 @@ function Director.summonMonsterKind(position: Vector3, kind: string, keystoneLev
 	local now = GameClock.now()
 	local elapsed = if roundStart then math.max(0, now - roundStart) else 30
 	local mult = computeHealthMultiplier(elapsed, keystoneLevel)
-	local isBoss = kind == "GraveReaper" or kind == "HollowArmor" or kind == "OssuaryBehemoth" or kind == "LichLord"
-	local count = if isBoss then 1 else math.min(4, Constants.MAX_ENEMIES - EnemyService.count())
 	if kind == "Skeleton" then
-		local ax, az = EnemyService.randomRingPosition(position, 22, 30)
-		local dx = position.X - ax
-		local dz = position.Z - az
-		local len = math.max(math.sqrt(dx * dx + dz * dz), 0.01)
-		local perpX = -dz / len
-		local perpZ = dx / len
-		for i = 1, count do
-			local offset = (i - (count + 1) * 0.5) * 2.6
-			local sx, sz = clampAndResolveSpawn(ax + perpX * offset, az + perpZ * offset)
-			EnemyService.spawn(kind, Vector3.new(sx, 0, sz), mult)
-		end
+		local ax, az = EnemyService.randomRingPosition(position, 24, 32)
+		spawnLegionnaireCohort(ax, az, position, mult, false)
 		return
 	end
+	local isBoss = kind == "GraveReaper" or kind == "HollowArmor" or kind == "OssuaryBehemoth" or kind == "LichLord"
+	local count = if isBoss then 1 else math.min(4, Constants.MAX_ENEMIES - EnemyService.count())
 	for _ = 1, count do
 		local x, z = EnemyService.randomRingPosition(position)
 		EnemyService.spawn(kind, Vector3.new(x, 0, z), mult)
@@ -245,7 +268,7 @@ function Director.step(dt: number)
 			local a = (i - 1) * (math.pi * 2 / 3)
 			local gx, gz = clampAndResolveSpawn(shrine.x + math.cos(a) * 10, shrine.z + math.sin(a) * 10)
 			Replication.queueEmergence(gx, gz)
-			local guardKind = EARLY_MONSTERS[rng:NextInteger(1, #EARLY_MONSTERS)]
+			local guardKind = EARLY_MONSTERS[rng:NextInteger(2, #EARLY_MONSTERS)]
 			EnemyService.spawn(guardKind, Vector3.new(gx, 0, gz), healthMultiplier)
 		end
 	end)
@@ -284,11 +307,14 @@ function Director.step(dt: number)
 	while spawnedCount < toSpawn and EnemyService.count() < Constants.MAX_ENEMIES do
 		local target = targets[rng:NextInteger(1, #targets)]
 		local kind = pickKind(elapsed)
+		if kind == "Skeleton" and EnemyService.count() + LEGION_COHORT_SIZE > Constants.MAX_ENEMIES then
+			kind = EARLY_MONSTERS[rng:NextInteger(2, #EARLY_MONSTERS)]
+		end
 		local ax, az
+		local emerged = false
 		if rng:NextNumber() < Constants.GRAVE_EMERGE_CHANCE then
-			local emerged
 			ax, az, emerged = EnemyService.pickEmergencePosition(target.position)
-			if emerged then
+			if emerged and kind ~= "Skeleton" then
 				Replication.queueEmergence(ax, az)
 			end
 		elseif elapsed < 35 then
@@ -303,19 +329,8 @@ function Director.step(dt: number)
 		end
 
 		if kind == "Skeleton" then
-			-- Crypt Legionnaires always deploy as a side-by-side 3-to-4-unit Phalanx Cohort
-			local cohortSize = math.min(3, Constants.MAX_ENEMIES - EnemyService.count())
-			local dx = target.position.X - ax
-			local dz = target.position.Z - az
-			local len = math.max(math.sqrt(dx * dx + dz * dz), 0.01)
-			local perpX = -dz / len
-			local perpZ = dx / len
-			for i = 1, cohortSize do
-				local offset = (i - (cohortSize + 1) * 0.5) * 2.55
-				local sx, sz = clampAndResolveSpawn(ax + perpX * offset, az + perpZ * offset)
-				EnemyService.spawn("Skeleton", Vector3.new(sx, 0, sz), healthMultiplier)
-				spawnedCount += 1
-			end
+			-- Crypt Legionnaires always deploy in a full 8-unit Phalanx Cohort
+			spawnedCount += spawnLegionnaireCohort(ax, az, target.position, healthMultiplier, emerged)
 		else
 			EnemyService.spawn(kind, Vector3.new(ax, 0, az), healthMultiplier)
 			spawnedCount += 1

@@ -701,7 +701,7 @@ function EnemyService.step(dt: number)
 						enemy.chargeDirZ = dirZ
 						speedMult = 2.75
 					else
-						-- Loose Phalanx Cohort Alignment: align into a side-by-side shield line with nearby Legionnaires
+						-- Loose 8-Unit Phalanx Cohort Alignment (2 ranks of 4): hold formation depth & width
 						local cx = math.floor(enemy.x / CELL_SIZE)
 						local cz = math.floor(enemy.z / CELL_SIZE)
 						local sumX = 0
@@ -720,7 +720,7 @@ function EnemyService.step(dt: number)
 										then
 											local mdx = mate.x - enemy.x
 											local mdz = mate.z - enemy.z
-											if mdx * mdx + mdz * mdz <= 121 then
+											if mdx * mdx + mdz * mdz <= 256 then
 												sumX += mate.x
 												sumZ += mate.z
 												squadCount += 1
@@ -733,19 +733,24 @@ function EnemyService.step(dt: number)
 						if squadCount > 0 and dist > 4.5 then
 							local cenX = sumX / squadCount
 							local cenZ = sumZ / squadCount
-							local cDx = nearest.position.X - cenX
-							local cDz = nearest.position.Z - cenZ
-							local squadDist = math.sqrt(cDx * cDx + cDz * cDz)
-							-- Nudge faster/slower so lagging Legionnaires catch up to the cohort's front rank line
-							local distDiff = dist - squadDist
-							speedMult = math.clamp(1.0 + distDiff * 0.14, 0.78, 1.28)
-							-- Gently pull toward cohort lateral cohesion while keeping formation width
-							local toCenX = cenX - enemy.x
-							local toCenZ = cenZ - enemy.z
-							local toCenLen = math.sqrt(toCenX * toCenX + toCenZ * toCenZ)
-							if toCenLen > 3.2 then
-								dirX = dirX * 0.78 + (toCenX / toCenLen) * 0.22
-								dirZ = dirZ * 0.78 + (toCenZ / toCenLen) * 0.22
+							local relX = enemy.x - cenX
+							local relZ = enemy.z - cenZ
+							local perpX = -dirZ
+							local perpZ = dirX
+							-- alongOffset > 0 means ahead of cohort center; < 0 means behind cohort center
+							local alongOffset = relX * dirX + relZ * dirZ
+							local latOffset = relX * perpX + relZ * perpZ
+							-- Keep 2-rank phalanx depth (~3.1 studs between front and rear rank)
+							if alongOffset < -1.8 then
+								speedMult = math.clamp(1.0 + (-1.8 - alongOffset) * 0.16, 1.0, 1.34)
+							elseif alongOffset > 1.8 then
+								speedMult = math.clamp(1.0 - (alongOffset - 1.8) * 0.14, 0.80, 1.0)
+							end
+							-- Reform lateral shield-wall width if a unit drifted wider than the 4-column line
+							if math.abs(latOffset) > 5.8 then
+								local pullSign = if latOffset > 0 then -1 else 1
+								dirX = dirX * 0.80 + perpX * pullSign * 0.20
+								dirZ = dirZ * 0.80 + perpZ * pullSign * 0.20
 								local nLen = math.max(math.sqrt(dirX * dirX + dirZ * dirZ), 0.001)
 								dirX /= nLen
 								dirZ /= nLen
