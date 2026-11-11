@@ -1568,8 +1568,8 @@ function WorldRenderer.start()
 					local flatLook = Vector3.new(lv.X, 0, lv.Z)
 					if flatLook.Magnitude > 0.05 then
 						flatLook = flatLook.Unit
-						local equippedStr = (player:GetAttribute("EquippedWeapons") :: string?) or wantedId
-						local isCleaver = string.find(equippedStr, "CryptCleaver", 1, true) ~= nil
+						local checkWeapons = if equippedStr ~= "" then equippedStr else wantedId
+						local isCleaver = string.find(checkWeapons, "CryptCleaver", 1, true) ~= nil
 						local dist = if isCleaver then 7.5 else 5.2
 						local pos =
 							Vector3.new(root.Position.X + flatLook.X * dist, 0.14, root.Position.Z + flatLook.Z * dist)
