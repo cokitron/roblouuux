@@ -845,26 +845,41 @@ local function buildPrefabTemplates(): { [string]: Model }
 		model.Name = "Relic_HexlockPistols"
 		createPivotBase(model, Vector3.new(2.8, 3.2, 1.4))
 		for _, side in { -1, 1 } do
-			local pCf = CFrame.new(side * 0.35, 1.75, 0) * CFrame.Angles(0, 0, side * math.rad(28))
+			local pCf = CFrame.new(side * 0.42, 1.78, 0) * CFrame.Angles(0, math.pi * 0.5, side * math.rad(28))
+			local flintPart = makePart({
+				name = "FlintlockMesh",
+				size = Vector3.new(0.36, 0.92, 2.05),
+				cframe = pCf,
+				color = Color3.fromRGB(215, 222, 235),
+				material = Enum.Material.Metal,
+				parent = model,
+			})
+			local flintMesh = Instance.new("SpecialMesh")
+			flintMesh.MeshType = Enum.MeshType.FileMesh
+			flintMesh.MeshId = "rbxassetid://97885475"
+			flintMesh.TextureId = "rbxassetid://97885499"
+			flintMesh.Scale = Vector3.new(1.35, 1.35, 1.35)
+			flintMesh.Parent = flintPart
+
 			makePart({
 				name = "PistolGrip",
-				size = Vector3.new(0.34, 1.1, 0.38),
-				cframe = pCf * CFrame.new(0, -0.45, 0),
+				size = Vector3.new(0.30, 0.85, 0.36),
+				cframe = pCf * CFrame.new(0, -0.35, 0.32) * CFrame.Angles(math.rad(-24), 0, 0),
 				color = ROOT_BARK,
 				material = Enum.Material.WoodPlanks,
 				parent = model,
 			})
 			local barrel = makePart({
 				name = "HexBarrel",
-				size = Vector3.new(1.85, 0.36, 0.36),
-				cframe = pCf * CFrame.new(side * 0.55, 0.25, 0),
-				color = Color3.fromRGB(255, 95, 125),
+				size = Vector3.new(0.24, 0.24, 1.55),
+				cframe = pCf * CFrame.new(0, 0.22, -0.45),
+				color = Color3.fromRGB(255, 175, 65),
 				material = Enum.Material.Neon,
 				parent = model,
 			})
 			if side == 1 then
 				local light = Instance.new("PointLight")
-				light.Color = Color3.fromRGB(255, 95, 125)
+				light.Color = Color3.fromRGB(255, 175, 65)
 				light.Brightness = 1.5
 				light.Range = 15
 				light.Shadows = false

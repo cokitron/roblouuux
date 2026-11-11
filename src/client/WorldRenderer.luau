@@ -1506,6 +1506,41 @@ function WorldRenderer.start()
 		return ring, prism
 	end
 
+	local function poseCharacterDualPistols(
+		character: Model?,
+		active: boolean,
+		rightKick: number,
+		leftKick: number,
+		idleSway: number
+	)
+		if not character then
+			return
+		end
+		local rUpper = character:FindFirstChild("RightUpperArm")
+		local lUpper = character:FindFirstChild("LeftUpperArm")
+		local rLower = character:FindFirstChild("RightLowerArm")
+		local lLower = character:FindFirstChild("LeftLowerArm")
+		local rShoulder = if rUpper then rUpper:FindFirstChild("RightShoulder") else nil
+		local lShoulder = if lUpper then lUpper:FindFirstChild("LeftShoulder") else nil
+		local rElbow = if rLower then rLower:FindFirstChild("RightElbow") else nil
+		local lElbow = if lLower then lLower:FindFirstChild("LeftElbow") else nil
+
+		if active then
+			if rShoulder and rShoulder:IsA("Motor6D") then
+				rShoulder.Transform = CFrame.Angles(math.rad(82) + rightKick * 0.45 + idleSway * 0.4, math.rad(-5), 0)
+			end
+			if lShoulder and lShoulder:IsA("Motor6D") then
+				lShoulder.Transform = CFrame.Angles(math.rad(82) + leftKick * 0.45 - idleSway * 0.4, math.rad(5), 0)
+			end
+			if rElbow and rElbow:IsA("Motor6D") then
+				rElbow.Transform = CFrame.Angles(math.rad(12) + rightKick * 0.25, 0, 0)
+			end
+			if lElbow and lElbow:IsA("Motor6D") then
+				lElbow.Transform = CFrame.Angles(math.rad(12) + leftKick * 0.25, 0, 0)
+			end
+		end
+	end
+
 	local function updatePlayerWeapons(serverNow: number)
 		local now = os.clock()
 		local localPlayer = Players.LocalPlayer
@@ -1513,7 +1548,12 @@ function WorldRenderer.start()
 			local character = player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart")
 			local wAttr = player:GetAttribute("SelectedWeapon")
+			local equippedAttr = player:GetAttribute("EquippedWeapons")
+			local equippedStr = if typeof(equippedAttr) == "string" then equippedAttr else ""
 			local wantedId = if typeof(wAttr) == "string" and player:GetAttribute("Dead") ~= true then wAttr else ""
+			if player:GetAttribute("Dead") ~= true and string.find(equippedStr, "HexlockPistols", 1, true) ~= nil then
+				wantedId = "HexlockPistols"
+			end
 
 			if player == localPlayer then
 				local chevron = getOrCreateAimChevron()
@@ -1655,17 +1695,18 @@ function WorldRenderer.start()
 					* CFrame.Angles(swingPitch, swingYaw, -0.35)
 				rig.primary:PivotTo(cleaverCf)
 			elseif wantedId == "HexlockPistols" then
-				-- Dual-wielding flintlock revolvers with alternating upward muzzle recoil
+				-- Dual-wielding flintlock revolvers held in outstretched hands with alternating upward muzzle recoil
 				local rightKick = if rig.shotIndex % 2 == 0 then attackPulse else attackPulse * 0.35
 				local leftKick = if rig.shotIndex % 2 == 1 then attackPulse else attackPulse * 0.35
+				poseCharacterDualPistols(character, true, rightKick, leftKick, idleSway)
 				local rightCf = rootCf
-					* CFrame.new(1.45, 0.2 + walkBob, -1.05 + rightKick * 0.35)
-					* CFrame.Angles(rightKick * 0.55 + idleSway * 0.5, 0, 0)
+					* CFrame.new(1.18, 0.36 + walkBob * 0.35, -1.62 + rightKick * 0.32)
+					* CFrame.Angles(rightKick * 0.55 + idleSway * 0.4, math.rad(-4), 0)
 				rig.primary:PivotTo(rightCf)
 				if rig.offhand then
 					local leftCf = rootCf
-						* CFrame.new(-1.45, 0.2 - walkBob, -1.05 + leftKick * 0.35)
-						* CFrame.Angles(leftKick * 0.55 - idleSway * 0.5, 0, 0)
+						* CFrame.new(-1.18, 0.36 - walkBob * 0.35, -1.62 + leftKick * 0.32)
+						* CFrame.Angles(leftKick * 0.55 - idleSway * 0.4, math.rad(4), 0)
 					rig.offhand:PivotTo(leftCf)
 				end
 			elseif wantedId == "ArcanistStaff" then

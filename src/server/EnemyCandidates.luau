@@ -466,6 +466,40 @@ type PendingUpgrade = {
 local pendingMeshUpgrades: { PendingUpgrade } = {}
 local storeMeshCache: { [number]: MeshPart } = {}
 
+-- Direct FileMesh fallbacks so 3D Creator Store & Roblox meshes render immediately in live published servers
+-- even when InsertService:LoadAsset is restricted for third-party model containers.
+local STORE_FILE_MESHES: { [number]: { meshId: string, textureId: string?, scale: Vector3? } } = {
+	[101559657970017] = {
+		meshId = "rbxassetid://97885475",
+		textureId = "rbxassetid://97885499",
+		scale = Vector3.new(1.35, 1.35, 1.35),
+	},
+	[524541876] = {
+		meshId = "rbxassetid://524541858",
+		textureId = "rbxassetid://524541866",
+		scale = Vector3.new(0.045, 0.045, 0.045),
+	},
+	[867643066] = {
+		meshId = "rbxassetid://867643049",
+		textureId = "rbxassetid://867643060",
+		scale = Vector3.new(0.045, 0.045, 0.045),
+	},
+	[591079857] = {
+		meshId = "rbxassetid://591079842",
+		textureId = "rbxassetid://591079849",
+		scale = Vector3.new(0.045, 0.045, 0.045),
+	},
+	[8260717445] = {
+		meshId = "rbxassetid://8260717364",
+		textureId = "rbxassetid://8260717404",
+		scale = Vector3.new(0.35, 0.35, 0.35),
+	},
+	[109820689568362] = {
+		meshId = "rbxassetid://120062356602177",
+		scale = Vector3.new(0.45, 0.45, 0.45),
+	},
+}
+
 local function inferStoreAssetId(name: string): number?
 	local assets = EnemyCandidates.CREATOR_STORE_ASSETS
 	if name == "SkullCranium" or name == "TrappedSkull" then
@@ -599,14 +633,28 @@ local function makePart(props: PartProps): BasePart
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 
-	local resolvedMesh = props.meshType or inferMeshType(props.name, props.shape)
-	if resolvedMesh then
+	local fileMeshInfo = if assetId then STORE_FILE_MESHES[assetId] else nil
+	if fileMeshInfo then
 		local mesh = Instance.new("SpecialMesh")
-		mesh.MeshType = resolvedMesh
-		if resolvedMesh == Enum.MeshType.Head then
-			mesh.Scale = Vector3.new(1.22, 1.22, 1.22)
+		mesh.MeshType = Enum.MeshType.FileMesh
+		mesh.MeshId = fileMeshInfo.meshId
+		if fileMeshInfo.textureId and props.keepStoreTexture then
+			mesh.TextureId = fileMeshInfo.textureId
+		end
+		if fileMeshInfo.scale then
+			mesh.Scale = fileMeshInfo.scale
 		end
 		mesh.Parent = part
+	else
+		local resolvedMesh = props.meshType or inferMeshType(props.name, props.shape)
+		if resolvedMesh then
+			local mesh = Instance.new("SpecialMesh")
+			mesh.MeshType = resolvedMesh
+			if resolvedMesh == Enum.MeshType.Head then
+				mesh.Scale = Vector3.new(1.22, 1.22, 1.22)
+			end
+			mesh.Parent = part
+		end
 	end
 
 	part.Parent = props.parent
@@ -3820,31 +3868,102 @@ function EnemyCandidates.buildWeaponModels(): Folder
 		m.Parent = wFolder
 	end
 
-	-- 3. HexlockPistols (Flintlock Pistol 101559657970017 + Silver Rune Barrel)
+	-- 3. HexlockPistols (Free Flintlock Pistol 3D Mesh 97885475 / 101559657970017 + Silver Rune Barrel & Grip)
 	do
 		local m = Instance.new("Model")
 		m.Name = "HexlockPistols"
 		createPivot(m)
-		local body = makePart({
-			name = "FlintlockBody",
-			size = Vector3.new(0.38, 0.95, 2.05),
-			cframe = CFrame.new(0, 0.15, -0.55),
+		-- Free 3D Flintlock Pistol Mesh centered on the hand grip and aiming forward (-Z)
+		local flintlock = makePart({
+			name = "FlintlockMesh",
+			size = Vector3.new(0.36, 0.92, 2.05),
+			cframe = CFrame.new(0, 0.12, -0.58),
 			color = Color3.fromRGB(215, 222, 235),
 			material = Enum.Material.Metal,
 			storeAssetId = assets.FlintlockPistol,
 			keepStoreTexture = true,
 			parent = m,
 		})
+		-- Angled walnut pistol grip right inside the character's palm (0, 0, 0)
+		makePart({
+			name = "PistolGrip",
+			size = Vector3.new(0.28, 0.72, 0.34),
+			cframe = CFrame.new(0, -0.22, 0.14) * CFrame.Angles(math.rad(-24), 0, 0),
+			color = CULTIST_WOOD,
+			material = Enum.Material.Wood,
+			parent = m,
+		})
+		-- Brass skull-cap pommel at the base of the grip
+		makePart({
+			name = "GripPommel",
+			size = Vector3.new(0.32, 0.22, 0.36),
+			cframe = CFrame.new(0, -0.52, 0.26),
+			color = Color3.fromRGB(212, 168, 72),
+			material = Enum.Material.Metal,
+			shape = Enum.PartType.Ball,
+			parent = m,
+		})
+		-- Gunmetal flintlock lockplate, receiver & brass trigger guard
+		makePart({
+			name = "LockReceiver",
+			size = Vector3.new(0.34, 0.38, 0.68),
+			cframe = CFrame.new(0, 0.14, -0.18),
+			color = IRON_DARK,
+			material = Enum.Material.Metal,
+			parent = m,
+		})
+		makePart({
+			name = "TriggerGuard",
+			size = Vector3.new(0.14, 0.24, 0.36),
+			cframe = CFrame.new(0, -0.06, -0.10),
+			color = Color3.fromRGB(212, 168, 72),
+			material = Enum.Material.Metal,
+			parent = m,
+		})
+		makePart({
+			name = "FlintHammer",
+			size = Vector3.new(0.14, 0.32, 0.16),
+			cframe = CFrame.new(0, 0.32, -0.04) * CFrame.Angles(math.rad(34), 0, 0),
+			color = ARMOR_STEEL,
+			material = Enum.Material.Metal,
+			parent = m,
+		})
+		-- Long octagonal silver-steel barrel + under-barrel ramrod + flared muzzle collar
+		makePart({
+			name = "OctagonBarrel",
+			size = Vector3.new(0.26, 0.26, 1.48),
+			cframe = CFrame.new(0, 0.22, -0.92),
+			color = Color3.fromRGB(210, 218, 232),
+			material = Enum.Material.Metal,
+			parent = m,
+		})
+		makePart({
+			name = "UnderRamrod",
+			size = Vector3.new(0.16, 0.14, 1.28),
+			cframe = CFrame.new(0, 0.08, -0.84),
+			color = Color3.fromRGB(195, 152, 64),
+			material = Enum.Material.Metal,
+			parent = m,
+		})
+		makePart({
+			name = "MuzzleCollar",
+			size = Vector3.new(0.32, 0.32, 0.18),
+			cframe = CFrame.new(0, 0.22, -1.62),
+			color = Color3.fromRGB(212, 168, 72),
+			material = Enum.Material.Metal,
+			parent = m,
+		})
+		-- Glowing hex-rune sight rail along the top of the barrel
 		local sight = makePart({
 			name = "HexSightGlow",
-			size = Vector3.new(0.18, 0.18, 1.35),
-			cframe = CFrame.new(0, 0.42, -0.75),
+			size = Vector3.new(0.12, 0.10, 1.22),
+			cframe = CFrame.new(0, 0.34, -0.88),
 			color = NEON_AMBER,
 			material = Enum.Material.Neon,
 			parent = m,
 			castShadow = false,
 		})
-		addSoulLight(body, NEON_AMBER, 1.15, 7)
+		addSoulLight(flintlock, NEON_AMBER, 1.15, 7)
 		sight.Name = "HexSightGlow"
 		m.Parent = wFolder
 	end
